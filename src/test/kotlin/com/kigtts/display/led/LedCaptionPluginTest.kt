@@ -62,13 +62,14 @@ class LedCaptionPluginTest {
         assertEquals("lightbulb", plugin.contributions(selected).actions.first { it.id == LedCaptionPlugin.TOGGLE }.symbol)
         assertNull((plugin.execute(LedCaptionPlugin.TOGGLE, selected) as PluginOutcome.SetSubtitleRenderer).root)
     }
-    @Test fun enabledRendererAddsStyleBeforeLampAndFullscreenAtReadingSide() = runBlocking {
+    @Test fun enabledRendererAddsStyleAtFontSizeSideAndFullscreenAtReadingSide() = runBlocking {
         val plugin = LedCaptionPlugin(); plugin.attach(environment())
         val active = PluginContext("", "", inputs = mapOf(LedCaptionPlugin.HOST_RENDERER to "display.led"))
         val actions = plugin.contributions(active).actions
-        val style = actions.first { it.id == LedStyle.OPEN }; val lamp = actions.first { it.id == LedCaptionPlugin.TOGGLE }
+        val style = actions.first { it.id == LedStyle.OPEN }
         val fullscreen = actions.first { it.id == LedCaptionPlugin.FULLSCREEN }
-        assertEquals(UiSlot.EDITOR_TOP_START, style.slot); assertTrue(style.order < lamp.order)
+        assertEquals(UiSlot.EDITOR_TOP_END, style.slot)
+        assertEquals(UiButtonStyle.ICON, style.buttonStyle)
         assertEquals(UiSlot.EDITOR_BOTTOM_END, fullscreen.slot); assertTrue(fullscreen.order < 0)
         assertEquals("fullscreen", fullscreen.symbol)
         val expanded = active.copy(inputs = active.inputs + (LedCaptionPlugin.HOST_FULLSCREEN to "true"))

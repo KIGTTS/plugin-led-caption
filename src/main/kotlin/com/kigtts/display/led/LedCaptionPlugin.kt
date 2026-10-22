@@ -33,7 +33,7 @@ class LedCaptionPlugin : KigPlugin {
 
     private fun active(context: PluginContext): Boolean = context.inputs[HOST_RENDERER]?.let { it == descriptor.id } ?: enabled
     private fun actions(active: Boolean, fullscreen: Boolean = false): PluginContributions = PluginContributions(actions = buildList {
-        if (active) add(UiAction(LedStyle.OPEN, "LED 样式", UiSlot.EDITOR_TOP_START, PluginIcon.SETTINGS,
+        if (active) add(UiAction(LedStyle.OPEN, "LED 样式", UiSlot.EDITOR_TOP_END, PluginIcon.SETTINGS,
             order = -110, buttonStyle = UiButtonStyle.ICON, symbol = "tune"))
         add(UiAction(TOGGLE, if (active) "关闭 LED 字幕" else "开启 LED 字幕", UiSlot.EDITOR_TOP_START,
             icon = PluginIcon.TEXT, order = -100, buttonStyle = UiButtonStyle.ICON,
