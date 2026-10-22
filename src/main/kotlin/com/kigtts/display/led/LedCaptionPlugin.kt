@@ -71,5 +71,3 @@ class LedCaptionPlugin : KigPlugin {
         val FILES = listOf("layout.js", "style.js", "scene.js", "paint.js", "led.js", "led.css", "index.html")
     }
 }
-
-

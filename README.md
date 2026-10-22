@@ -38,4 +38,3 @@ npx --yes --package @playwright/cli playwright-cli -s=led-caption run-code --fil
 截图存入 `output/playwright/`。该检查验证实际前景像素、旋转后显示、长文滚动、流式合并、暂停恢复、高 DPI、占位文本与减弱动态。
 
 MIT License。
-
