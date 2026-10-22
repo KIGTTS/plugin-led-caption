@@ -80,9 +80,9 @@ class LedCaptionPluginTest {
         val environment = environment(); val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val context = PluginContext("保留当前文字", "正在聆听")
         val controls = plugin.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
-        assertEquals(18, controls.controls.size)
+        assertEquals(19, controls.controls.size)
         assertEquals(2, controls.controls.filterIsInstance<PluginControl.Color>().size)
-        assertEquals(7, controls.controls.filterIsInstance<PluginControl.Slider>().size)
+        assertEquals(8, controls.controls.filterIsInstance<PluginControl.Slider>().size)
         assertEquals(3, controls.controls.filterIsInstance<PluginControl.Choice>().size)
         assertTrue(plugin.execute("style/set/textColor", context.copy(inputs = mapOf("value" to "4282501875"))) is PluginOutcome.NoAction)
         assertTrue(plugin.execute("style/set/dotRowsPerLine", context.copy(inputs = mapOf("value" to "18"))) is PluginOutcome.NoAction)

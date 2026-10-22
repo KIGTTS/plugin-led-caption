@@ -23,7 +23,8 @@ internal class LedStyle(file: File, renderer: File) {
             slider("dotSizeFraction", "灯珠尺寸", s.dotSizeFraction * 100, 10f, 100f, "%"),
             toggle("glowEnabled", "发光效果", s.glowEnabled),
             slider("glowStrength", "发光强度", s.glowStrength * 100, 0f, 100f, "%"),
-            slider("displayHeightFraction", "显示高度", s.displayHeightFraction * 100, 35f, 92f, "%"),
+            slider("fontScale", "字号", s.fontScale * 100, 50f, 300f, "%"),
+            slider("displayHeightFraction", "显示高度", s.displayHeightFraction * 100, 35f, 100f, "%"),
             toggle("adaptiveMultiLine", "内容较多时自动换行", s.adaptiveMultiLine),
             slider("scrollSpeedDpPerSecond", "滚动速度", s.scrollSpeedDpPerSecond, 24f, 1600f, " dp/s"),
             choice("scrollDirection", "滚动方向", s.scrollDirection, "left" to "向左", "right" to "向右"),
@@ -59,7 +60,7 @@ internal class LedStyle(file: File, renderer: File) {
         const val SET = "style/set/"
         const val RESET = "style/reset"
         private val COLORS = setOf("textColor", "backgroundColor")
-        private val PERCENT = setOf("dotSizeFraction", "glowStrength", "displayHeightFraction", "screenBrightness")
+        private val PERCENT = setOf("dotSizeFraction", "glowStrength", "displayHeightFraction", "screenBrightness", "fontScale")
         private val NUMBERS = setOf("dotRowsPerLine", "scrollSpeedDpPerSecond", "loopGapDp")
         private val BOOLEANS = setOf("dotMatrixEnabled", "glowEnabled", "adaptiveMultiLine", "quickSwipeOpensQuickText", "keepScreenOn", "followSystemBrightness")
         private val CHOICES = mapOf("dotShape" to setOf("circle", "square"), "scrollDirection" to setOf("left", "right"), "shortTextAlignment" to setOf("start", "center", "end"))

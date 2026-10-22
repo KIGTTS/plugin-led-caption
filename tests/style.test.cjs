@@ -2,12 +2,22 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const api=require('../src/main/assets/led/style.js'),scene=require('../src/main/assets/led/scene.js');
 const measure=(character,font)=>character.codePointAt(0)>255?font:font*.6;
-test('all eighteen settings have safe typed defaults and malformed values never enter paint',()=>{
-  assert.equal(Object.keys(api.defaults).length,18);
+test('all nineteen settings have safe typed defaults and malformed values never enter paint',()=>{
+  assert.equal(Object.keys(api.defaults).length,19);
   assert.deepEqual(api.normalize(null),api.defaults);
   const value=api.normalize({textColor:'<script>',backgroundColor:'red',dotRowsPerLine:Infinity,dotSizeFraction:-2,glowStrength:99,scrollDirection:'diagonal',screenBrightness:NaN});
   assert.equal(value.textColor,'#FFFFFF');assert.equal(value.backgroundColor,'#000000');assert.equal(value.dotRowsPerLine,24);
   assert.equal(value.dotSizeFraction,.1);assert.equal(value.glowStrength,1);assert.equal(value.scrollDirection,'left');assert.equal(value.screenBrightness,1);
+});
+
+test('larger font visibly increases height in both orientations while remaining bounded',()=>{
+  for(const [width,height] of [[393,540],[851,300]]){
+    function physical(scale){const settings=api.normalize({fontScale:scale,displayHeightFraction:1}),geo=scene.viewport(api.geometry(width,height,2,18,settings),{},1),model=scene.plan('大字幕',geo,measure,18,settings);return {height:model.font*geo.pitch,geo,model};}
+    const normal=physical(1),large=physical(3);
+    assert.ok(large.height>normal.height*1.15,`${width}x${height} actually enlarges glyphs`);
+    assert.ok(large.height<=height);assert.ok(large.geo.columns*large.geo.rows<=120000);
+  }
+  assert.equal(api.normalize({fontScale:Infinity}).fontScale,1);assert.equal(api.normalize({fontScale:99}).fontScale,3);
 });
 test('0.1.1 named presets migrate without losing their visible color and intensity',()=>{
   const migrated=api.normalize({color:'cyan',density:'bold',glow:'soft',speed:'slow'});

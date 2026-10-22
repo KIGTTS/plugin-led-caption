@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption
 /** Session-only switch. Text stays in the host and is streamed into the selected local renderer. */
 class LedCaptionPlugin : KigPlugin {
     override val descriptor = PluginDescriptor("display.led", "LED 灯珠字幕",
-        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.2", license = "MIT")
+        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.3", license = "MIT")
     private lateinit var environment: PluginEnvironment
     @Volatile private var enabled = false
     private lateinit var style: LedStyle

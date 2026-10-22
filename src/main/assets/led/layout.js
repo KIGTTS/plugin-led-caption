@@ -53,7 +53,7 @@
   function layout(text,geo,measure,sizePercent=28) {
     const parts=graphemes(text),columns=Math.max(4,geo.columns-6),rows=Math.max(4,geo.rows-6);
     const minimum=Math.min(14,Math.max(6,Math.floor(rows*.65)),Math.max(6,Math.floor(columns*.8)));
-    const preferred=Math.max(minimum,Math.min(88,Math.floor(columns*Math.max(4,Math.min(75,sizePercent))/100),Math.floor(rows*.85)));
+    const preferred=Math.max(minimum,Math.min(512,Math.floor(columns*Math.max(4,Math.min(225,sizePercent))/100),Math.floor(rows*.85)));
     let lo=minimum,hi=preferred,chosen=minimum,lines;
     while(lo<=hi){
       const font=Math.floor((lo+hi)/2),lineHeight=Math.ceil(font*1.2),available=Math.max(1,Math.floor(rows/lineHeight));

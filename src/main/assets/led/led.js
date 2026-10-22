@@ -18,7 +18,8 @@
   function raster(index){
     if(cache.has(index)){const item=cache.get(index);cache.delete(index);cache.set(index,item);return item;}
     rasterCount++;const item=paint.raster(index,model,geo,style,family,content.text.length?1:.3);cache.set(index,item);
-    while(cache.size>3){const first=cache.keys().next().value;paint.release(cache.get(first));cache.delete(first);}
+    const pixels=()=>Array.from(cache.values()).reduce((sum,value)=>sum+value.image.width*value.image.height,0);
+    while(cache.size>1&&(cache.size>3||pixels()>6000000)){const first=cache.keys().next().value;paint.release(cache.get(first));cache.delete(first);}
     return item;
   }
   function retainFrame(){
@@ -84,7 +85,7 @@
     const next={text:typeof value.text==='string'?value.text:content.text,placeholder:typeof value.placeholder==='string'?value.placeholder:content.placeholder,fontSizePercent:Number.isFinite(value.fontSizePercent)?value.fontSizePercent:content.fontSizePercent,
       safeArea:value.safeArea?layoutApi.safeArea(value.safeArea):content.safeArea};
     const incoming=styleApi.normalize(value.settings?{...settings,...value.settings}:settings),changed=JSON.stringify(incoming)!==JSON.stringify(settings);
-    const geometryChanged=incoming.dotRowsPerLine!==settings.dotRowsPerLine||incoming.displayHeightFraction!==settings.displayHeightFraction||next.fontSizePercent!==content.fontSizePercent;
+    const geometryChanged=incoming.dotRowsPerLine!==settings.dotRowsPerLine||incoming.fontScale!==settings.fontScale||incoming.displayHeightFraction!==settings.displayHeightFraction||next.fontSizePercent!==content.fontSizePercent;
     const areaChanged=JSON.stringify(next.safeArea)!==JSON.stringify(content.safeArea);
     if(next.text===content.text&&next.placeholder===content.placeholder&&next.fontSizePercent===content.fontSizePercent&&geo&&!changed&&!areaChanged)return;
     settings=incoming;style=styleApi.tokens(settings);content=next;resizePending=resizePending||geometryChanged||areaChanged;

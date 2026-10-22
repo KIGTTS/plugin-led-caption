@@ -2,7 +2,7 @@
   'use strict';
   const legacyColors={amber:'#FFA424',white:'#C8E0FF',green:'#4EE48F',cyan:'#41CAF3',rose:'#FF60B1'};
   const defaults=Object.freeze({textColor:'#FFFFFF',backgroundColor:'#000000',dotMatrixEnabled:true,dotShape:'circle',
-    dotRowsPerLine:24,dotSizeFraction:.58,glowEnabled:true,glowStrength:.42,displayHeightFraction:.72,
+    dotRowsPerLine:24,dotSizeFraction:.58,glowEnabled:true,glowStrength:.42,displayHeightFraction:.72,fontScale:1,
     adaptiveMultiLine:false,scrollSpeedDpPerSecond:72,scrollDirection:'left',loopGapDp:96,
     shortTextAlignment:'center',quickSwipeOpensQuickText:true,keepScreenOn:true,followSystemBrightness:false,screenBrightness:1});
   function normalize(value){
@@ -15,7 +15,7 @@
       dotMatrixEnabled:bool('dotMatrixEnabled'),dotShape:choice('dotShape',['circle','square']),
       dotRowsPerLine:Math.round(number('dotRowsPerLine',{fine:30,bold:18}[value.density]||24,8,256)),
       dotSizeFraction:number('dotSizeFraction',.58,.1,1),glowEnabled:bool('glowEnabled'),
-      glowStrength:number('glowStrength',{soft:.2,bright:.8}[value.glow]??.42,0,1),displayHeightFraction:number('displayHeightFraction',.72,.35,.92),
+      glowStrength:number('glowStrength',{soft:.2,bright:.8}[value.glow]??.42,0,1),displayHeightFraction:number('displayHeightFraction',.72,.35,1),fontScale:number('fontScale',1,.5,3),
       adaptiveMultiLine:bool('adaptiveMultiLine'),scrollSpeedDpPerSecond:number('scrollSpeedDpPerSecond',{slow:36,fast:128}[value.speed]||72,24,1600),
       scrollDirection:choice('scrollDirection',['left','right']),loopGapDp:number('loopGapDp',96,24,1600),
       shortTextAlignment:choice('shortTextAlignment',['start','center','end']),quickSwipeOpensQuickText:bool('quickSwipeOpensQuickText'),
@@ -29,7 +29,7 @@
       glowAlpha:settings.glowEnabled?settings.glowStrength:0};
   }
   function geometry(width,height,dpr,fontPercent,value){
-    const settings=normalize(value),font=Math.max(12,Math.min(width*Math.max(4,Math.min(75,fontPercent))/100,height*.85*settings.displayHeightFraction));
+    const settings=normalize(value),heightLimit=Math.min(.98,.85*Math.sqrt(settings.fontScale)),font=Math.max(12,Math.min(width*Math.max(4,Math.min(75,fontPercent))*settings.fontScale/100,height*heightLimit*settings.displayHeightFraction));
     // Beyond physical pixel resolution, extra samples add cost without additional visible detail.
     const pitch=Math.max(1,Math.sqrt(width*height/120000),font*1.2/settings.dotRowsPerLine),columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
     return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};

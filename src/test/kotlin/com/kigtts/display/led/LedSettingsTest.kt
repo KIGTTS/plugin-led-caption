@@ -13,8 +13,8 @@ class LedSettingsTest {
         val value = LedSettings.from(mapOf("dotRowsPerLine" to "999", "dotSizeFraction" to "-1", "glowStrength" to "Infinity", "screenBrightness" to "NaN", "scrollSpeedDpPerSecond" to "0", "displayHeightFraction" to "5"))
         assertEquals(256, value.dotRowsPerLine); assertEquals(.1f, value.dotSizeFraction)
         assertEquals(.42f, value.glowStrength); assertEquals(1f, value.screenBrightness)
-        assertEquals(24f, value.scrollSpeedDpPerSecond); assertEquals(.92f, value.displayHeightFraction)
-        assertEquals(18, value.values().size)
+        assertEquals(24f, value.scrollSpeedDpPerSecond); assertEquals(1f, value.displayHeightFraction)
+        assertEquals(19, value.values().size)
     }
     @Test fun namedPresetUpgradeSurvivesLaterChangesAndRestart() {
         val dir = temporary.newFolder(); val file = File(dir, "style.properties"); val renderer = File(dir, "renderer")
@@ -57,5 +57,15 @@ class LedSettingsTest {
         assertEquals(LedSettings().json(), File(renderer, "renderer.json").readText())
         assertEquals(LedSettings(), LedSettingsStore(file, renderer).value)
         assertTrue(renderer.listFiles()!!.none { it.name.endsWith(".tmp") })
+    }
+    @Test fun largerFontHasIndependentSliderAndSurvivesRestart() {
+        val dir = temporary.newFolder(); val file = File(dir, "settings.properties"); val renderer = File(dir, "renderer")
+        val style = LedStyle(file, renderer)
+        assertEquals(PluginOutcome.NoAction, style.action("style/set/fontScale", mapOf("value" to "250")))
+        assertEquals(2.5f, LedSettingsStore(file, renderer).value.fontScale)
+        val slider = style.controls().controls.filterIsInstance<PluginControl.Slider>().single { it.actionId.endsWith("fontScale") }
+        assertEquals(300f, slider.max); assertEquals(250f, slider.value)
+        assertEquals(3f, LedSettings.from(mapOf("fontScale" to "99")).fontScale)
+        assertEquals(1f, LedSettings.from(mapOf("fontScale" to "NaN")).fontScale)
     }
 }
