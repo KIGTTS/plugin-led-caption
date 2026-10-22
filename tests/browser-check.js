@@ -1,0 +1,68 @@
+async (page) => {
+  const checks=[];
+  const check=(condition,name)=>{if(!condition)throw new Error(name);checks.push(name);};
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.setViewportSize({width:393,height:540});
+  await page.goto('http://127.0.0.1:8768/index.html');
+  await page.waitForFunction(()=>window.KigttsSubtitle?.ready);
+  check(await page.evaluate(()=>document.querySelector('meta[http-equiv="Content-Security-Policy"]').content.includes("connect-src 'none'")),'offline CSP');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'你好，世界',placeholder:'点击输入文字',fontSizePercent:28}));
+  await page.waitForFunction(()=>KigttsSubtitle.snapshot().text==='你好，世界'&&KigttsSubtitle.snapshot().rasterCount>1);
+  await page.waitForTimeout(250);
+  await page.screenshot({path:'output/playwright/led-portrait.png'});
+  const staticStart=await page.evaluate(()=>KigttsSubtitle.snapshot());
+  await page.waitForTimeout(300);
+  check((await page.evaluate(()=>KigttsSubtitle.snapshot().drawCount))===staticStart.drawCount,'static subtitles do not keep rendering');
+  const stream=await page.evaluate(async()=>{
+    const before=KigttsSubtitle.snapshot();
+    for(let i=0;i<30;i++)KigttsSubtitle.update({text:'流式字幕 '+i,placeholder:'',fontSizePercent:28});
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    return {before,after:KigttsSubtitle.snapshot()};
+  });
+  check(stream.after.text==='流式字幕 29','latest streaming content');
+  check(stream.after.rasterCount-stream.before.rasterCount===1,'stream updates coalesce into one raster per frame');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'双指调整字号。长文继续滚动，所有内容都会完整显示。'.repeat(25),placeholder:'',fontSizePercent:28}));
+  await page.waitForFunction(()=>KigttsSubtitle.snapshot().scroll>0,{timeout:6000});
+  const beforePause=await page.evaluate(()=>{KigttsSubtitle.pause();return KigttsSubtitle.snapshot();});
+  await page.waitForTimeout(350);
+  const held=await page.evaluate(()=>KigttsSubtitle.snapshot());
+  check(held.scroll===beforePause.scroll&&held.drawCount===beforePause.drawCount,'host pause stops scroll and animation');
+  await page.evaluate(()=>KigttsSubtitle.resume());
+  await page.waitForFunction(value=>KigttsSubtitle.snapshot().scroll>value,beforePause.scroll,{timeout:2000});
+  check(true,'resume continues scrolling');
+  await page.screenshot({path:'output/playwright/led-long-text.png'});
+  await page.setViewportSize({width:851,height:260});
+  await page.evaluate(()=>KigttsSubtitle.update({text:'LED 字幕 · KIGTTS',placeholder:'',fontSizePercent:18}));
+  await page.waitForFunction(()=>KigttsSubtitle.snapshot().columns>100);
+  await page.waitForFunction(()=>document.querySelector('#lamps').getContext('2d').getImageData(0,0,document.querySelector('#lamps').width,document.querySelector('#lamps').height).data.some((value,index)=>index%4===3&&value>220));
+  await page.waitForTimeout(250);
+  await page.screenshot({path:'output/playwright/led-landscape.png'});
+  check(await page.evaluate(()=>document.documentElement.scrollWidth===innerWidth&&document.documentElement.scrollHeight===innerHeight),'landscape has no external scroll or clipping layout');
+  check(true,'foreground stays visible after orientation resize');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'横屏字幕会继续滚动，灯珠始终对齐灯板。'.repeat(25),placeholder:'',fontSizePercent:20}));
+  await page.waitForFunction(()=>KigttsSubtitle.snapshot().scroll>0,null,{timeout:6000});
+  await page.screenshot({path:'output/playwright/led-landscape-scrolling.png'});
+  check(true,'long landscape subtitles keep scrolling after resize');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'',placeholder:'点击输入文字',fontSizePercent:28}));
+  await page.waitForFunction(()=>document.querySelector('#accessible-text').textContent==='点击输入文字');
+  check(true,'empty text displays accessible placeholder');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'<script>alert("x")</script> 👩🏽‍💻',placeholder:'',fontSizePercent:20}));
+  await page.waitForFunction(()=>document.querySelector('#accessible-text').textContent.includes('<script>'));
+  check(await page.locator('script').count()===2,'text updates never create markup');
+  const dprContext=await page.context().browser().newContext({viewport:{width:393,height:540},deviceScaleFactor:3});
+  const dprPage=await dprContext.newPage();
+  try {
+    await dprPage.goto('http://127.0.0.1:8768/index.html');
+    await dprPage.waitForFunction(()=>window.KigttsSubtitle?.snapshot().dpr===1.5);
+    check(await dprPage.evaluate(()=>devicePixelRatio===3&&KigttsSubtitle.snapshot().canvasPixels<=6100000),'high-DPI is bounded without changing CSS viewport');
+  } finally {await dprContext.close();}
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.evaluate(()=>KigttsSubtitle.update({text:'减弱动态也能阅读长文。'.repeat(20),placeholder:'',fontSizePercent:28}));
+  await page.waitForTimeout(250);
+  const reducedStart=await page.evaluate(()=>KigttsSubtitle.snapshot().drawCount);
+  await page.waitForTimeout(350);
+  check(await page.evaluate(()=>KigttsSubtitle.snapshot().drawCount)===reducedStart,'reduced motion avoids continuous rendering');
+  check(errors.length===0,'no page runtime errors');
+  return {passed:checks.length,checks,errors};
+}
