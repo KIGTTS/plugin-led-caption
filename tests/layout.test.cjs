@@ -2,6 +2,20 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const api=require('../src/main/assets/led/layout.js');
 const measure=(character,font)=>character.codePointAt(0)>255?font:font*.6;
+
+test('safe text viewport preserves the full card lattice in both orientations',()=>{
+  for(const [width,height] of [[393,540],[851,230]]) {
+    const board=api.geometry(width,height,3),geo=api.viewport(board,{top:60,right:12,bottom:56,left:12});
+    assert.ok(geo.offsetY>=60);assert.ok(geo.offsetX>=12);
+    assert.ok(geo.offsetY+geo.rows*geo.pitch<=height-56);
+    assert.ok(geo.offsetX+geo.columns*geo.pitch<=width-12);
+    assert.ok(Math.abs((geo.offsetX-board.offsetX)/geo.pitch-Math.round((geo.offsetX-board.offsetX)/geo.pitch))<1e-8);
+    assert.equal(geo.width,width);assert.equal(geo.height,height);
+  }
+  const board=api.geometry(240,120,1),bounded=api.viewport(board,{top:1e9,bottom:1e9,right:NaN,left:-3});
+  assert.ok(bounded.rows>=8&&bounded.columns>=8);
+  assert.deepEqual(api.safeArea(null),{top:0,right:0,bottom:0,left:0});
+});
 test('keeps emoji sequences and Chinese graphemes intact',()=>{
   assert.deepEqual(api.graphemes('你👩🏽‍💻好é'),['你','👩🏽‍💻','好','é']);
 });

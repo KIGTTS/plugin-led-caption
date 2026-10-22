@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption
 /** Session-only switch. Text stays in the host and is streamed into the selected local renderer. */
 class LedCaptionPlugin : KigPlugin {
     override val descriptor = PluginDescriptor("display.led", "LED 灯珠字幕",
-        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.1", license = "MIT")
+        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.2", license = "MIT")
     private lateinit var environment: PluginEnvironment
     @Volatile private var enabled = false
     private lateinit var style: LedStyle
@@ -47,8 +47,8 @@ class LedCaptionPlugin : KigPlugin {
 
     override suspend fun execute(actionId: String, context: PluginContext): PluginOutcome {
         check(::environment.isInitialized) { "灯板尚未准备完成" }
-        if (actionId == LedStyle.OPEN) return style.menu()
-        style.action(actionId)?.let { return it }
+        if (actionId == LedStyle.OPEN) return style.controls()
+        style.action(actionId, context.inputs)?.let { return it }
         if (actionId == FULLSCREEN) return PluginOutcome.HostAction(HostCommand.TOGGLE_SUBTITLE_FULLSCREEN)
         if (actionId != TOGGLE) return PluginOutcome.Message("未知操作")
         if (active(context)) {
@@ -68,6 +68,8 @@ class LedCaptionPlugin : KigPlugin {
         const val HOST_RENDERER = "host.subtitleRenderer"
         const val HOST_FULLSCREEN = "host.subtitleFullscreen"
         const val FULLSCREEN = "led-fullscreen"
-        val FILES = listOf("layout.js", "style.js", "led.js", "led.css", "index.html")
+        val FILES = listOf("layout.js", "style.js", "scene.js", "paint.js", "led.js", "led.css", "index.html")
     }
 }
+
+

@@ -79,25 +79,27 @@ class LedCaptionPluginTest {
     @Test fun settingsUseNativeDialogsAndPersistWithoutResettingCurrentCaption() = runBlocking {
         val environment = environment(); val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val context = PluginContext("保留当前文字", "正在聆听")
-        val menu = plugin.execute(LedStyle.OPEN, context) as PluginOutcome.Menu
-        assertEquals(5, menu.items.size)
-        val colors = plugin.execute("style/color", context) as PluginOutcome.Menu
-        assertTrue(colors.items.any { it.id == "style/color/cyan" })
-        assertTrue(plugin.execute("style/color/cyan", context) is PluginOutcome.Menu)
-        assertTrue(plugin.execute("style/density/bold", context) is PluginOutcome.Menu)
-        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"color\":\"cyan\""))
+        val controls = plugin.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
+        assertEquals(18, controls.controls.size)
+        assertEquals(2, controls.controls.filterIsInstance<PluginControl.Color>().size)
+        assertEquals(7, controls.controls.filterIsInstance<PluginControl.Slider>().size)
+        assertEquals(3, controls.controls.filterIsInstance<PluginControl.Choice>().size)
+        assertTrue(plugin.execute("style/set/textColor", context.copy(inputs = mapOf("value" to "4282501875"))) is PluginOutcome.NoAction)
+        assertTrue(plugin.execute("style/set/dotRowsPerLine", context.copy(inputs = mapOf("value" to "18"))) is PluginOutcome.NoAction)
+        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"textColor\":\"#41CAF3\""))
         val reloaded = LedCaptionPlugin(); reloaded.attach(environment)
-        val restored = reloaded.execute(LedStyle.OPEN, context) as PluginOutcome.Menu
-        assertTrue(restored.items.any { it.label.contains("冰蓝") }); assertTrue(restored.items.any { it.label.contains("大颗粒") })
-        assertTrue(reloaded.execute("style/reset", context) is PluginOutcome.Menu)
-        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"color\":\"amber\""))
+        val restored = reloaded.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
+        assertEquals(4282501875L, restored.controls.filterIsInstance<PluginControl.Color>().first().value)
+        assertEquals(18f, restored.controls.filterIsInstance<PluginControl.Slider>().first().value)
+        assertTrue(reloaded.execute("style/reset", context) is PluginOutcome.Controls)
+        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"textColor\":\"#FFFFFF\""))
     }
     @Test fun settingsRejectUnknownValuesAndRecoverFromCorruptedData() = runBlocking {
         val environment = environment()
         environment.storage.file("config/led-style.properties").apply { parentFile.mkdirs(); writeText("color=<script>\ndensity=other") }
         val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val config = environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText()
-        assertTrue(config.contains("\"color\":\"amber\"")); assertFalse(config.contains("<script>"))
+        assertTrue(config.contains("\"textColor\":\"#FFFFFF\"")); assertFalse(config.contains("<script>"))
         assertTrue(plugin.execute("style/color/../red", PluginContext("", "")) is PluginOutcome.Message)
     }
 }

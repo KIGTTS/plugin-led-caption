@@ -1,25 +1,39 @@
 (function(global){
   'use strict';
-  const palettes={
-    amber:{core:'#fffce0',mid:'#ffe7a1',body:'#ffc15a',edge:'#ed872d',rgb:'255,164,36'},
-    white:{core:'#ffffff',mid:'#f6faff',body:'#dde9fa',edge:'#a7bfdc',rgb:'200,224,255'},
-    green:{core:'#eeffe4',mid:'#d1ffc0',body:'#87ec9c',edge:'#3fbd84',rgb:'78,228,143'},
-    cyan:{core:'#efffff',mid:'#c8ffff',body:'#71e1f2',edge:'#339ac7',rgb:'65,202,243'},
-    rose:{core:'#fff0f8',mid:'#ffcee8',body:'#ff8ac2',edge:'#d44f94',rgb:'255,96,177'}
-  };
-  const defaults=Object.freeze({color:'amber',density:'balanced',glow:'standard',speed:'standard'});
+  const legacyColors={amber:'#FFA424',white:'#C8E0FF',green:'#4EE48F',cyan:'#41CAF3',rose:'#FF60B1'};
+  const defaults=Object.freeze({textColor:'#FFFFFF',backgroundColor:'#000000',dotMatrixEnabled:true,dotShape:'circle',
+    dotRowsPerLine:24,dotSizeFraction:.58,glowEnabled:true,glowStrength:.42,displayHeightFraction:.72,
+    adaptiveMultiLine:false,scrollSpeedDpPerSecond:72,scrollDirection:'left',loopGapDp:96,
+    shortTextAlignment:'center',quickSwipeOpensQuickText:true,keepScreenOn:true,followSystemBrightness:false,screenBrightness:1});
   function normalize(value){
     value=value&&typeof value==='object'?value:{};
-    return {color:Object.prototype.hasOwnProperty.call(palettes,value.color)?value.color:defaults.color,
-      density:['fine','balanced','bold'].includes(value.density)?value.density:defaults.density,
-      glow:['soft','standard','bright'].includes(value.glow)?value.glow:defaults.glow,
-      speed:['slow','standard','fast'].includes(value.speed)?value.speed:defaults.speed};
+    const color=(key,fallback)=>/^#[a-f\d]{6}$/i.test(value[key])?value[key].toUpperCase():fallback;
+    const number=(key,fallback,min,max)=>typeof value[key]==='number'&&Number.isFinite(value[key])?Math.max(min,Math.min(max,value[key])):fallback;
+    const bool=key=>typeof value[key]==='boolean'?value[key]:defaults[key];
+    const choice=(key,options)=>options.includes(value[key])?value[key]:defaults[key];
+    return {textColor:color('textColor',legacyColors[value.color]||defaults.textColor),backgroundColor:color('backgroundColor',defaults.backgroundColor),
+      dotMatrixEnabled:bool('dotMatrixEnabled'),dotShape:choice('dotShape',['circle','square']),
+      dotRowsPerLine:Math.round(number('dotRowsPerLine',{fine:30,bold:18}[value.density]||24,8,256)),
+      dotSizeFraction:number('dotSizeFraction',.58,.1,1),glowEnabled:bool('glowEnabled'),
+      glowStrength:number('glowStrength',{soft:.2,bright:.8}[value.glow]??.42,0,1),displayHeightFraction:number('displayHeightFraction',.72,.35,.92),
+      adaptiveMultiLine:bool('adaptiveMultiLine'),scrollSpeedDpPerSecond:number('scrollSpeedDpPerSecond',{slow:36,fast:128}[value.speed]||72,24,1600),
+      scrollDirection:choice('scrollDirection',['left','right']),loopGapDp:number('loopGapDp',96,24,1600),
+      shortTextAlignment:choice('shortTextAlignment',['start','center','end']),quickSwipeOpensQuickText:bool('quickSwipeOpensQuickText'),
+      keepScreenOn:bool('keepScreenOn'),followSystemBrightness:bool('followSystemBrightness'),screenBrightness:number('screenBrightness',1,.1,1)};
   }
+  const rgb=color=>[1,3,5].map(start=>parseInt(color.slice(start,start+2),16));
+  const mix=(parts,amount)=>'#'+parts.map(value=>Math.max(0,Math.min(255,Math.round(amount<0?value*(1+amount):value+(255-value)*amount))).toString(16).padStart(2,'0')).join('');
   function tokens(value){
-    const settings=normalize(value);
-    return {...settings,palette:palettes[settings.color],pitch:{fine:.8,balanced:1,bold:1.35}[settings.density],
-      glowAlpha:{soft:.35,standard:.7,bright:1}[settings.glow],speedRows:{slow:2.5,standard:5,fast:9}[settings.speed]};
+    const settings=normalize(value),parts=rgb(settings.textColor);
+    return {...settings,palette:{core:mix(parts,.9),mid:mix(parts,.55),body:settings.textColor,edge:mix(parts,-.18),rgb:parts.join(',')},
+      glowAlpha:settings.glowEnabled?settings.glowStrength:0};
   }
-  const api={defaults,normalize,tokens};global.KigttsLedStyle=api;
+  function geometry(width,height,dpr,fontPercent,value){
+    const settings=normalize(value),font=Math.max(12,Math.min(width*Math.max(4,Math.min(75,fontPercent))/100,height*.85*settings.displayHeightFraction));
+    // Beyond physical pixel resolution, extra samples add cost without additional visible detail.
+    const pitch=Math.max(1,Math.sqrt(width*height/120000),font*1.2/settings.dotRowsPerLine),columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
+    return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};
+  }
+  const api={defaults,normalize,tokens,geometry};global.KigttsLedStyle=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

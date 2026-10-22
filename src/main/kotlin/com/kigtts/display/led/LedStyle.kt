@@ -1,66 +1,68 @@
 package com.kigtts.display.led
 
-import com.kigtts.plugin.api.PageAction
-import com.kigtts.plugin.api.PluginIcon
-import com.kigtts.plugin.api.PluginOutcome
+import com.kigtts.plugin.api.*
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.Properties
 
-/** Small named presets keep the native dialog understandable and the persisted data bounded. */
-internal class LedStyle(private val file: File, private val renderer: File) {
-    data class Choice(val id: String, val label: String)
-    data class Field(val key: String, val label: String, val symbol: String, val options: List<Choice>, val default: String)
-    private val values = Properties()
-    init {
-        if (file.isFile && file.length() < 4096) runCatching { file.reader(Charsets.UTF_8).use(values::load) }
-        fields.forEach { field -> if (values.getProperty(field.key) !in field.options.map { it.id }) values.setProperty(field.key, field.default) }
-        writeRenderer()
+/** Native controls send bounded values back; the renderer remains mounted during every adjustment. */
+internal class LedStyle(file: File, renderer: File) {
+    private val store = LedSettingsStore(file, renderer)
+
+    fun controls(): PluginOutcome.Controls {
+        val s = store.value
+        fun slider(key: String, title: String, value: Float, min: Float, max: Float, suffix: String = "", steps: Int = 0) =
+            PluginControl.Slider(title, "$SET$key", value, min, max, steps, suffix)
+        fun toggle(key: String, title: String, value: Boolean) = PluginControl.Toggle(title, "$SET$key", value)
+        fun choice(key: String, title: String, value: String, vararg options: Pair<String, String>) =
+            PluginControl.Choice(title, "$SET$key", options.map { PluginControlOption(it.first, it.second) }, value)
+        return PluginOutcome.Controls("LED 样式", listOf(
+            PluginControl.Color("字幕颜色", "${SET}textColor", argb(s.textColor)),
+            PluginControl.Color("背景颜色", "${SET}backgroundColor", argb(s.backgroundColor)),
+            toggle("dotMatrixEnabled", "使用灯珠点阵", s.dotMatrixEnabled),
+            choice("dotShape", "灯珠形状", s.dotShape, "circle" to "圆点", "square" to "方点"),
+            slider("dotRowsPerLine", "灯珠密度", s.dotRowsPerLine.toFloat(), 8f, 256f, " 行", 247),
+            slider("dotSizeFraction", "灯珠尺寸", s.dotSizeFraction * 100, 10f, 100f, "%"),
+            toggle("glowEnabled", "发光效果", s.glowEnabled),
+            slider("glowStrength", "发光强度", s.glowStrength * 100, 0f, 100f, "%"),
+            slider("displayHeightFraction", "显示高度", s.displayHeightFraction * 100, 35f, 92f, "%"),
+            toggle("adaptiveMultiLine", "内容较多时自动换行", s.adaptiveMultiLine),
+            slider("scrollSpeedDpPerSecond", "滚动速度", s.scrollSpeedDpPerSecond, 24f, 1600f, " dp/s"),
+            choice("scrollDirection", "滚动方向", s.scrollDirection, "left" to "向左", "right" to "向右"),
+            slider("loopGapDp", "字幕间距", s.loopGapDp, 24f, 1600f, " dp"),
+            choice("shortTextAlignment", "文本对齐", s.shortTextAlignment, "start" to "居左", "center" to "居中", "end" to "居右"),
+            toggle("quickSwipeOpensQuickText", "快速左滑打开快捷文本", s.quickSwipeOpensQuickText),
+            toggle("keepScreenOn", "保持屏幕常亮", s.keepScreenOn),
+            toggle("followSystemBrightness", "亮度跟随系统", s.followSystemBrightness),
+            slider("screenBrightness", "屏幕亮度", s.screenBrightness * 100, 10f, 100f, "%"),
+        ), resetActionId = RESET)
     }
-    fun menu(): PluginOutcome.Menu = PluginOutcome.Menu("LED 样式", fields.map { field ->
-        PageAction("style/${field.key}", "${field.label} · ${field.options.first { it.id == values.getProperty(field.key) }.label}", PluginIcon.SETTINGS, field.symbol)
-    } + PageAction("style/reset", "恢复默认样式", PluginIcon.SETTINGS, "restart_alt"))
-    fun action(action: String): PluginOutcome? {
-        val pieces = action.split('/')
-        if (pieces.firstOrNull() != "style") return null
-        if (pieces.size == 2 && pieces[1] == "reset") {
-            fields.forEach { values.setProperty(it.key, it.default) }; save(); return menu()
-        }
-        val field = fields.firstOrNull { it.key == pieces.getOrNull(1) } ?: return PluginOutcome.Message("未知样式选项")
-        if (pieces.size == 2) return PluginOutcome.Menu(field.label, field.options.map { option ->
-            PageAction("style/${field.key}/${option.id}", option.label + if (values.getProperty(field.key) == option.id) " ✓" else "", PluginIcon.SETTINGS, field.symbol)
-        } + PageAction(OPEN, "返回 LED 样式", PluginIcon.CLOSE, "arrow_back"))
-        val option = field.options.firstOrNull { it.id == pieces.getOrNull(2) } ?: return PluginOutcome.Message("未知样式选项")
-        if (pieces.size != 3) return PluginOutcome.Message("未知样式选项")
-        values.setProperty(field.key, option.id); save(); return menu()
+
+    fun action(action: String, inputs: Map<String, String>): PluginOutcome? {
+        if (action == RESET) { store.reset(); return controls() }
+        if (!action.startsWith("style/")) return null
+        if (!action.startsWith(SET)) return PluginOutcome.Message("未知样式选项")
+        val key = action.removePrefix(SET)
+        val input = inputs["value"] ?: return PluginOutcome.Message("没有收到设置值")
+        val value = when {
+            key in COLORS -> input.toLongOrNull()?.takeIf { it in 0..0xFFFFFFFFL }?.let { "#" + (it and 0xFFFFFF).toString(16).padStart(6, '0').uppercase() }
+            key in PERCENT -> input.toFloatOrNull()?.takeIf(Float::isFinite)?.let { "${it / 100f}" }
+            key in NUMBERS -> input.toFloatOrNull()?.takeIf(Float::isFinite)?.toString()
+            key in BOOLEANS -> input.takeIf { it == "true" || it == "false" }
+            key in CHOICES -> input.takeIf { it in CHOICES.getValue(key) }
+            else -> null
+        } ?: return PluginOutcome.Message("设置值无效")
+        if (!store.update(key, value)) return PluginOutcome.Message("未知样式选项")
+        return PluginOutcome.NoAction
     }
-    private fun save() {
-        file.parentFile.mkdirs()
-        val temporary = File.createTempFile("led-style-", ".tmp", file.parentFile)
-        try {
-            temporary.writer(Charsets.UTF_8).use { values.store(it, "LED caption style") }
-            Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        } finally { temporary.delete() }
-        writeRenderer()
-    }
-    private fun writeRenderer() {
-        // Values come exclusively from the allowlisted preset IDs; no text or paths enter this file.
-        val json = fields.joinToString(",", "{", "}") { "\"${it.key}\":\"${values.getProperty(it.key)}\"" }
-        renderer.mkdirs()
-        val temporary = File.createTempFile("led-settings-", ".tmp", renderer)
-        try {
-            temporary.writeText(json, Charsets.UTF_8)
-            Files.move(temporary.toPath(), File(renderer, "renderer.json").toPath(), StandardCopyOption.REPLACE_EXISTING)
-        } finally { temporary.delete() }
-    }
+
     companion object {
         const val OPEN = "led-style"
-        val fields = listOf(
-            Field("color", "灯光颜色", "palette", listOf(Choice("amber", "暖金"), Choice("white", "月白"), Choice("green", "青绿"), Choice("cyan", "冰蓝"), Choice("rose", "玫红")), "amber"),
-            Field("density", "灯珠大小与间距", "blur_on", listOf(Choice("fine", "细密"), Choice("balanced", "均衡"), Choice("bold", "大颗粒")), "balanced"),
-            Field("glow", "辉光", "flare", listOf(Choice("soft", "柔和"), Choice("standard", "标准"), Choice("bright", "明亮")), "standard"),
-            Field("speed", "滚动速度", "speed", listOf(Choice("slow", "舒缓"), Choice("standard", "标准"), Choice("fast", "轻快")), "standard"),
-        )
+        const val SET = "style/set/"
+        const val RESET = "style/reset"
+        private val COLORS = setOf("textColor", "backgroundColor")
+        private val PERCENT = setOf("dotSizeFraction", "glowStrength", "displayHeightFraction", "screenBrightness")
+        private val NUMBERS = setOf("dotRowsPerLine", "scrollSpeedDpPerSecond", "loopGapDp")
+        private val BOOLEANS = setOf("dotMatrixEnabled", "glowEnabled", "adaptiveMultiLine", "quickSwipeOpensQuickText", "keepScreenOn", "followSystemBrightness")
+        private val CHOICES = mapOf("dotShape" to setOf("circle", "square"), "scrollDirection" to setOf("left", "right"), "shortTextAlignment" to setOf("start", "center", "end"))
+        private fun argb(color: String): Long = 0xFF000000L or color.removePrefix("#").toLong(16)
     }
 }

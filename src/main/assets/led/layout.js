@@ -17,6 +17,17 @@
     const columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
     return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};
   }
+  function safeArea(value={}) {
+    const inset=side=>Number.isFinite(value?.[side])?Math.max(0,value[side]):0;
+    return {top:inset('top'),right:inset('right'),bottom:inset('bottom'),left:inset('left')};
+  }
+  function viewport(board,insets={}) {
+    const area=safeArea(insets),cells=(value,max)=>Math.min(Math.max(0,max),Math.ceil(value/board.pitch));
+    const left=cells(area.left,board.columns-8),right=cells(area.right,board.columns-left-8);
+    const top=cells(area.top,board.rows-8),bottom=cells(area.bottom,board.rows-top-8);
+    return {...board,columns:board.columns-left-right,rows:board.rows-top-bottom,
+      offsetX:board.offsetX+left*board.pitch,offsetY:board.offsetY+top*board.pitch};
+  }
   function wrap(parts,font,columns,measure,stopAfter=Infinity) {
     const lines=[];let line='',advance=0;
     const tokens=[];
@@ -58,7 +69,7 @@
     for(let start=0;start<lines.length;start+=maxLines)pages.push(lines.slice(start,start+maxLines));
     return {font:chosen,lineHeight,pages,columns,rows,scrolling:lines.length*lineHeight>rows,graphemes:parts.length};
   }
-  const api={geometry,graphemes,wrap,layout};
+  const api={geometry,safeArea,viewport,graphemes,wrap,layout};
   global.KigttsLedLayout=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
