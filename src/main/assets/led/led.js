@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   const layoutApi=window.KigttsLedLayout;
+  const styleApi=window.KigttsLedStyle;
   const board=document.getElementById('board'),grid=document.getElementById('grid'),lamps=document.getElementById('lamps');
   const gridCtx=grid.getContext('2d',{alpha:true}),ctx=lamps.getContext('2d',{alpha:true});
   const accessible=document.getElementById('accessible-text');
@@ -8,6 +9,7 @@
   const family='"Noto Sans CJK SC","Microsoft YaHei",sans-serif';
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   let content={text:'',placeholder:'点击输入文字',fontSizePercent:28},geo,model,current,previous;
+  let settings=styleApi.normalize(),style=styleApi.tokens(settings);
   let pageIndex=0,scroll=0,fadeStart=0,pageStart=0,frame=0,lastTick=0,paused=false;
   let layoutCount=0,rasterCount=0,drawCount=0,resizeTimer=0,pendingUpdate=0,readingTimer=0;
   const metrics=new Map();
@@ -38,10 +40,11 @@
   function sprite(){
     const pitch=geo.pitch*geo.dpr,size=Math.ceil(pitch*3),image=canvas(size,size),p=image.getContext('2d'),center=size/2;
     const glow=p.createRadialGradient(center,center,pitch*.13,center,center,pitch*1.42);
-    glow.addColorStop(0,'rgba(255,177,46,.57)');glow.addColorStop(.34,'rgba(255,154,27,.22)');glow.addColorStop(1,'rgba(255,139,18,0)');
+    const palette=style.palette,alpha=style.glowAlpha;
+    glow.addColorStop(0,'rgba('+palette.rgb+','+alpha*.8+')');glow.addColorStop(.34,'rgba('+palette.rgb+','+alpha*.31+')');glow.addColorStop(1,'rgba('+palette.rgb+',0)');
     p.fillStyle=glow;p.fillRect(0,0,size,size);
     const bead=p.createRadialGradient(center-pitch*.08,center-pitch*.1,0,center,center,pitch*.35);
-    bead.addColorStop(0,'#fffce0');bead.addColorStop(.24,'#ffe7a1');bead.addColorStop(.65,'#ffc15a');bead.addColorStop(1,'#ed872d');
+    bead.addColorStop(0,palette.core);bead.addColorStop(.24,palette.mid);bead.addColorStop(.65,palette.body);bead.addColorStop(1,palette.edge);
     p.fillStyle=bead;p.beginPath();p.arc(center,center,pitch*.34,0,Math.PI*2);p.fill();
     p.fillStyle='rgba(255,255,241,.76)';p.beginPath();p.arc(center-pitch*.07,center-pitch*.1,pitch*.09,0,Math.PI*2);p.fill();
     return image;
@@ -75,14 +78,17 @@
   function request(){
     if(frame||readingTimer||paused||document.hidden)return;
     if(reduced.matches){
-      const wait=Math.max(80,6000-(performance.now()-pageStart)%6000);
+      // Schedule just after the boundary. RAF timestamps can precede a timeout's wall time
+      // by a frame, otherwise an exact 6s timeout can repeatedly redisplay the old slice.
+      const elapsed=Math.max(0,performance.now()-pageStart);
+      const wait=Math.max(80,(Math.floor(elapsed/6000)+1)*6000-elapsed+40);
       readingTimer=setTimeout(()=>{readingTimer=0;if(!paused&&!document.hidden)frame=requestAnimationFrame(tick);},wait);
     }else frame=requestAnimationFrame(tick);
   }
   function tick(now){
     frame=0;if(paused||document.hidden)return;
     // Pauses do not fast-forward a long subtitle or skip its first reading hold.
-    if(lastTick&&now-lastTick>200){pageStart+=now-lastTick;fadeStart+=now-lastTick;}
+    if(!reduced.matches&&lastTick&&now-lastTick>200){pageStart+=now-lastTick;fadeStart+=now-lastTick;}
     lastTick=now;
     const overflow=Math.max(0,current.rows-geo.rows),elapsed=now-pageStart;
     if(reduced.matches){
@@ -91,8 +97,8 @@
       if(slice>=slices&&model.pages.length>1)nextPage(now);
     }else{
       // Lamps stay on the physical board lattice while the characters move by whole rows.
-      scroll=Math.min(overflow,Math.floor(Math.max(0,(elapsed-1600)/1000)*5));
-      if(elapsed>1600+overflow/5*1000+2000&&(overflow>0||model.pages.length>1))nextPage(now);
+      scroll=Math.min(overflow,Math.floor(Math.max(0,(elapsed-1600)/1000)*style.speedRows));
+      if(elapsed>1600+overflow/style.speedRows*1000+2000&&(overflow>0||model.pages.length>1))nextPage(now);
     }
     draw(now);
     if(previous||(!reduced.matches&&now-fadeStart<180)||overflow>0||model.pages.length>1)request();
@@ -105,7 +111,7 @@
     if(board.clientWidth<1||board.clientHeight<1)return;
     clearTimeout(readingTimer);readingTimer=0;
     const now=performance.now();
-    if(resize){geo=layoutApi.geometry(board.clientWidth,board.clientHeight,window.devicePixelRatio);background();release(previous);previous=null;}
+    if(resize){geo=layoutApi.geometry(board.clientWidth,board.clientHeight,window.devicePixelRatio,style.pitch);background();release(previous);previous=null;}
     else{release(previous);previous=current;if(previous)previous.scroll=scroll;}
     const displayed=content.text.length?content.text:content.placeholder;
     model=layoutApi.layout(displayed,geo,measure,content.fontSizePercent);layoutCount++;
@@ -116,13 +122,16 @@
   }
   function update(value){
     if(!value||typeof value!=='object')return;
-    const next={text:typeof value.text==='string'?value.text:'',placeholder:typeof value.placeholder==='string'?value.placeholder:'',fontSizePercent:Number.isFinite(value.fontSizePercent)?value.fontSizePercent:28};
-    if(next.text===content.text&&next.placeholder===content.placeholder&&next.fontSizePercent===content.fontSizePercent&&geo)return;
+    const next={text:typeof value.text==='string'?value.text:content.text,placeholder:typeof value.placeholder==='string'?value.placeholder:content.placeholder,fontSizePercent:Number.isFinite(value.fontSizePercent)?value.fontSizePercent:content.fontSizePercent};
+    const incoming=styleApi.normalize(value.settings||settings),changed=JSON.stringify(incoming)!==JSON.stringify(settings),densityChanged=incoming.density!==settings.density;
+    if(next.text===content.text&&next.placeholder===content.placeholder&&next.fontSizePercent===content.fontSizePercent&&geo&&!changed)return;
+    settings=incoming;style=styleApi.tokens(settings);
     content=next;
     // Streaming recognition can publish many partial results in a frame: rasterize the newest one once.
-    if(!pendingUpdate)pendingUpdate=requestAnimationFrame(()=>{pendingUpdate=0;rebuild(!geo);});
+    resizePending=resizePending||densityChanged;
+    if(!pendingUpdate)pendingUpdate=requestAnimationFrame(()=>{pendingUpdate=0;const resize=!geo||resizePending;resizePending=false;rebuild(resize);});
   }
-  let pauseAt=0;
+  let pauseAt=0,resizePending=false;
   function pause(){if(!paused)pauseAt=performance.now();paused=true;if(frame)cancelAnimationFrame(frame);clearTimeout(readingTimer);readingTimer=0;frame=0;lastTick=0;}
   function resume(){if(paused){const held=performance.now()-pauseAt;pageStart+=held;fadeStart+=held;}paused=false;lastTick=0;request();}
   function resized(){clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>rebuild(true),70);}
@@ -131,6 +140,6 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=performance.now();if(frame)cancelAnimationFrame(frame);clearTimeout(readingTimer);readingTimer=0;frame=0;lastTick=0;}else{const held=performance.now()-hiddenAt;pageStart+=held;fadeStart+=held;request();}});
   reduced.addEventListener('change',()=>{if(geo)rebuild(false);});
   window.KigttsSubtitle=Object.freeze({ready:true,update,pause,resume,
-    snapshot:()=>({text:content.text,placeholder:content.placeholder,page:pageIndex,pages:model?.pages.length||0,scroll,font:model?.font||0,columns:geo?.columns||0,rows:geo?.rows||0,dpr:geo?.dpr||0,layoutCount,rasterCount,drawCount,paused,canvasPixels:current?current.image.width*current.image.height:0})});
+    snapshot:()=>({text:content.text,placeholder:content.placeholder,settings:{...settings},page:pageIndex,pages:model?.pages.length||0,scroll,font:model?.font||0,columns:geo?.columns||0,rows:geo?.rows||0,dpr:geo?.dpr||0,layoutCount,rasterCount,drawCount,paused,canvasPixels:current?current.image.width*current.image.height:0})});
   rebuild(true);
 })();

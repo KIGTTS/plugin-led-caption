@@ -4,6 +4,8 @@
 
 点击“开启聆听”左侧的灯泡切换显示方式。短句自动适应字幕区域，长文缓慢滚动；关闭灯泡即可恢复普通字幕。点按编辑、长按全屏和双指调整字号仍使用主界面的操作。
 
+开启灯板后，灯泡左侧的调整按钮可选择暖金、月白、青绿、冰蓝、玫红，以及灯珠密度、辉光和滚动速度。样式会保留，下次开启继续使用。朗读按钮左侧提供全屏字幕按钮。
+
 显示只在本次会话启用，重启软件后恢复普通字幕。图像、网页等媒体快捷文本继续使用原有显示方式。
 
 ## 构建
@@ -12,11 +14,11 @@
 
 ```powershell
 ./gradlew.bat testDebugUnitTest assembleDebug collectPluginDependencies
-node --test tests/layout.test.cjs
+node --test tests/layout.test.cjs tests/style.test.cjs
 ./Package.ps1 -SigningKey /path/to/private.der -AndroidSdk /path/to/android-sdk -SkipBuild
 ```
 
-`display.led` 需要宿主插件 API17。本地 HTML/Canvas 使用独立文字布局模块，灯珠亮芯、光晕和暗珠均由代码绘制，无需网络、字体下载或图片素材。字号使用宿主传入的 CJK 字宽百分比。画布密度上限 1.5，长文按缓存面积分页，静态字幕不持续刷新；启用系统“减弱动态”时改为分段停留阅读。
+`display.led` 0.1.1 需要宿主插件 API18。本地 HTML/Canvas 使用独立文字布局模块，灯珠亮芯、光晕和暗珠均由代码绘制，无需网络、字体下载或图片素材。字号使用宿主传入的 CJK 字宽百分比。画布密度上限 1.5，长文按缓存面积分页，静态字幕不持续刷新；启用系统“减弱动态”时改为分段停留阅读。
 
 ## 验证
 

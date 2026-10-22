@@ -11,8 +11,9 @@
     }
     return result;
   }
-  function geometry(width,height,dpr) {
-    const pitch=Math.max(3.5,Math.min(7,width/72,height/48));
+  function geometry(width,height,dpr,spacing=1) {
+    const scale=Number.isFinite(spacing)?Math.max(.75,Math.min(1.5,spacing)):1;
+    const pitch=Math.max(3.5,Math.min(7,width/72,height/48))*scale;
     const columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
     return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};
   }

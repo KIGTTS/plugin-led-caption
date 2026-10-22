@@ -49,7 +49,21 @@ async (page) => {
   check(true,'empty text displays accessible placeholder');
   await page.evaluate(()=>KigttsSubtitle.update({text:'<script>alert("x")</script> 👩🏽‍💻',placeholder:'',fontSizePercent:20}));
   await page.waitForFunction(()=>document.querySelector('#accessible-text').textContent.includes('<script>'));
-  check(await page.locator('script').count()===2,'text updates never create markup');
+  check(await page.locator('script').count()===3,'text updates never create markup');
+  await page.evaluate(()=>KigttsSubtitle.update({text:'蓝色灯板',placeholder:'',fontSizePercent:28,settings:{color:'cyan',density:'bold',glow:'soft',speed:'slow'}}));
+  await page.waitForFunction(()=>KigttsSubtitle.snapshot().settings.color==='cyan');
+  await page.waitForTimeout(250);
+  const styled=await page.evaluate(()=>KigttsSubtitle.snapshot());
+  check(styled.settings.glow==='soft'&&styled.settings.speed==='slow'&&styled.columns<130,'live style update changes density and appearance');
+  check(await page.evaluate(()=>{
+    const c=document.querySelector('#lamps'),pixels=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    let blue=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+3]>100&&pixels[i+2]>pixels[i]+35)blue++;
+    return blue>50;
+  }),'custom color reaches visible lamp pixels');
+  await page.evaluate(()=>KigttsSubtitle.update({settings:{color:'green'}}));
+  await page.waitForTimeout(250);
+  check(await page.evaluate(()=>KigttsSubtitle.snapshot().text==='蓝色灯板'),'style-only update preserves the current quick text');
+  await page.screenshot({path:'output/playwright/led-custom-style.png'});
   const dprContext=await page.context().browser().newContext({viewport:{width:393,height:540},deviceScaleFactor:3});
   const dprPage=await dprContext.newPage();
   try {
@@ -63,6 +77,8 @@ async (page) => {
   const reducedStart=await page.evaluate(()=>KigttsSubtitle.snapshot().drawCount);
   await page.waitForTimeout(350);
   check(await page.evaluate(()=>KigttsSubtitle.snapshot().drawCount)===reducedStart,'reduced motion avoids continuous rendering');
+  await page.waitForTimeout(6000);
+  check(await page.evaluate(()=>KigttsSubtitle.snapshot().scroll)>0,'reduced-motion long text advances in reading intervals');
   check(errors.length===0,'no page runtime errors');
   return {passed:checks.length,checks,errors};
 }
