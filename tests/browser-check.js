@@ -2,6 +2,7 @@ async (page) => {
   const checks=[],errors=[];const check=(condition,name)=>{if(!condition)throw new Error(name);checks.push(name);};
   page.on('pageerror',error=>errors.push(error.message));
   await page.emulateMedia({reducedMotion:'no-preference'});await page.setViewportSize({width:393,height:540});
+  await page.route('**/*', route=>route.continue());
   await page.goto('http://127.0.0.1:8768/index.html');await page.waitForFunction(()=>window.KigttsSubtitle?.ready);
   check(await page.evaluate(()=>document.querySelector('meta[http-equiv="Content-Security-Policy"]').content.includes("connect-src 'none'")),'offline CSP');
   await page.evaluate(()=>KigttsSubtitle.update({text:'你好',placeholder:'点击输入文字',fontSizePercent:20,safeArea:{top:60,bottom:56,left:12,right:12}}));

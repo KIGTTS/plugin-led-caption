@@ -6,7 +6,7 @@
     return {...safe,rows,offsetY:safe.offsetY+Math.floor((safe.rows-rows)/2)*safe.pitch};
   }
   function plan(text,geo,measure,sizePercent,settings,measureInk){
-    const pitch=geo.pitch*geo.dpr,cellBudget=Math.min(200000,Math.floor(5900000/(pitch*pitch)));
+    const pitch=geo.pitch*geo.dpr,cellBudget=Math.min(60000,Math.floor(5900000/(pitch*pitch)));
     if(settings.adaptiveMultiLine){
       const model=layout.layout(text,geo,measure,sizePercent*settings.fontScale),lines=model.pages.flat();
       const maxLines=Math.max(1,Math.min(80,Math.floor((cellBudget/geo.columns-6)/model.lineHeight),Math.floor((4096/pitch-6)/model.lineHeight)));
@@ -15,8 +15,10 @@
     }
     // Fit visible glyph ink, not a font's em box plus a second line of padding.
     const ink=measureInk?measureInk(text):{ascent:.8,descent:.2};
-    const font=Math.max(1,Math.min(512,geo.columns*Math.max(1,Math.min(100,sizePercent))*settings.fontScale/100,(geo.rows-2)/(ink.ascent+ink.descent)));
-    const baseline=1+font*ink.ascent,lineHeight=Math.min(geo.rows,Math.ceil(font*(ink.ascent+ink.descent)+2));
+    const fill=Math.max(0,Math.min(1,Math.max((settings.fontScale-1)/2,(sizePercent-28)/22)));
+    const fit=(geo.rows-.5)/(ink.ascent+ink.descent),preferred=geo.columns*Math.max(1,Math.min(100,sizePercent))*settings.fontScale/100;
+    const font=Math.max(1,Math.min(512,preferred+(fit-preferred)*fill,fit));
+    const baseline=.25+font*ink.ascent,lineHeight=Math.min(geo.rows,Math.ceil(font*(ink.ascent+ink.descent)+.5));
     const maxColumns=Math.max(font+6,Math.min(1800,Math.floor(4096/pitch),Math.floor(cellBudget/(lineHeight+6))));
     const parts=layout.graphemes(text.replace(/[\r\n\t]+/g,' ')),pages=[],pageWidths=[],pageStarts=[];
     let line='',width=0,total=0;

@@ -30,11 +30,15 @@
   }
   function geometry(width,height,dpr,fontPercent,value,insets={}){
     const availableWidth=Math.max(1,width-(insets.left||0)-(insets.right||0)),availableHeight=Math.max(1,height-(insets.top||0)-(insets.bottom||0));
-    const settings=normalize(value),font=Math.max(12,Math.min(availableWidth*Math.max(1,Math.min(100,fontPercent))*settings.fontScale/100,availableHeight*settings.displayHeightFraction));
+    const settings=normalize(value),fill=fillProgress(fontPercent,settings),heightLimit=availableHeight*heightFraction(fontPercent,settings);
+    const preferred=availableWidth*Math.max(1,Math.min(100,fontPercent))*settings.fontScale/100;
+    const font=Math.max(12,Math.min(preferred+(heightLimit-preferred)*fill,heightLimit));
     // Beyond physical pixel resolution, extra samples add cost without additional visible detail.
-    const pitch=Math.max(1,Math.sqrt(width*height/120000),font*1.2/settings.dotRowsPerLine),columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
+    const pitch=Math.max(2,Math.sqrt(width*height/24000),font*1.2/settings.dotRowsPerLine),columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
     return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};
   }
-  const api={defaults,normalize,tokens,geometry};global.KigttsLedStyle=api;
+  const fillProgress=(fontPercent,settings)=>settings.adaptiveMultiLine?0:Math.max(0,Math.min(1,Math.max((settings.fontScale-1)/2,(fontPercent-28)/22)));
+  const heightFraction=(fontPercent,settings)=>settings.displayHeightFraction+(1-settings.displayHeightFraction)*fillProgress(fontPercent,settings);
+  const api={defaults,normalize,tokens,geometry,fillProgress,heightFraction};global.KigttsLedStyle=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

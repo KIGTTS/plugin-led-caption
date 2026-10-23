@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption
 /** Session-only switch. Text stays in the host and is streamed into the selected local renderer. */
 class LedCaptionPlugin : KigPlugin {
     override val descriptor = PluginDescriptor("display.led", "LED 灯珠字幕",
-        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.4", license = "MIT")
+        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.7", license = "MIT")
     private lateinit var environment: PluginEnvironment
     @Volatile private var enabled = false
     private lateinit var style: LedStyle
@@ -57,7 +57,7 @@ class LedCaptionPlugin : KigPlugin {
         }
         check(File(environment.storage.file(ROOT), "index.html").isFile) { "灯板资源不可用，请重新启用插件" }
         enabled = true
-        return PluginOutcome.SetSubtitleRenderer(PluginResource(ROOT), "index.html")
+        return PluginOutcome.SetSubtitleRenderer(PluginResource(ROOT), "index.html", PanelPresentation(0xff000000L, fadeControlsWhenIdle = true))
     }
 
     override suspend fun close() { enabled = false }

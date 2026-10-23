@@ -7,7 +7,7 @@
   let content={text:'',placeholder:'点击输入文字',fontSizePercent:28,safeArea:layoutApi.safeArea()},boardGeo,geo,model,previous;
   let settings=styleApi.normalize(),style=styleApi.tokens(settings);
   let pageIndex=0,scroll=0,fadeStart=0,pageStart=0,frame=0,lastTick=0,paused=false;
-  let layoutCount=0,rasterCount=0,drawCount=0,resizeTimer=0,pendingUpdate=0,readingTimer=0,pauseAt=0,resizePending=false,textPending=false;
+  let layoutCount=0,rasterCount=0,drawCount=0,lastRebuildMs=0,lastRebuildParts={},resizeTimer=0,pendingUpdate=0,readingTimer=0,pauseAt=0,resizePending=false,textPending=false;
   const metrics=new Map(),cache=new Map();
   function measure(character,font){
     const key=font+':'+character;if(metrics.has(key))return metrics.get(key);
@@ -84,11 +84,11 @@
     if(textChanged&&model)retainFrame();else{paint.release(previous);previous=null;}
     if(resize){
       boardGeo=styleApi.geometry(board.clientWidth,board.clientHeight,window.devicePixelRatio,content.fontSizePercent,settings,content.safeArea);
-      geo=scene.viewport(boardGeo,content.safeArea,settings.displayHeightFraction);
+      geo=scene.viewport(boardGeo,content.safeArea,styleApi.heightFraction(content.fontSizePercent,settings));
       const width=Math.ceil(boardGeo.width*boardGeo.dpr),height=Math.ceil(boardGeo.height*boardGeo.dpr);
       if(lamps.width!==width)lamps.width=width;if(lamps.height!==height)lamps.height=height;
     }
-    paint.background(grid,boardGeo,style);
+    const backgroundStart=performance.now();paint.background(grid,boardGeo,style);const planStart=performance.now();
     clearCache();const displayed=content.text.length?content.text:content.placeholder;
     model=scene.plan(displayed,geo,measure,content.fontSizePercent,settings,measureInk);layoutCount++;
     if(textChanged||!oldModel){pageIndex=0;scroll=0;pageStart=now;fadeStart=now;}
@@ -102,7 +102,7 @@
       else scroll=oldScroll;
     }
     lastTick=0;
-    accessible.textContent=displayed;board.setAttribute('aria-label',displayed||'LED 字幕');draw(now);request();
+    const drawStart=performance.now();accessible.textContent=displayed;board.setAttribute('aria-label',displayed||'LED 字幕');draw(now);lastRebuildMs=performance.now()-now;lastRebuildParts={background:planStart-backgroundStart,plan:drawStart-planStart,draw:performance.now()-drawStart};request();
   }
   function update(value){
     if(!value||typeof value!=='object')return;
@@ -125,7 +125,7 @@
   window.KigttsSubtitle=Object.freeze({ready:true,update,pause,resume,
     snapshot:()=>({text:content.text,placeholder:content.placeholder,settings:{...settings},safeArea:{...content.safeArea},axis:model?.axis,
       page:pageIndex,pages:model?.pages.length||0,scroll,font:model?.font||0,columns:geo?.columns||0,rows:geo?.rows||0,dpr:geo?.dpr||0,
-      layoutCount,rasterCount,drawCount,paused,fading:performance.now()-fadeStart<180,viewport:geo?{top:geo.offsetY,height:geo.rows*geo.pitch}:null,
+      layoutCount,rasterCount,drawCount,lastRebuildMs,lastRebuildParts,paused,fading:performance.now()-fadeStart<180,viewport:geo?{top:geo.offsetY,height:geo.rows*geo.pitch}:null,
       cachedPages:cache.size,canvasPixels:Math.max(0,...Array.from(cache.values(),item=>item.image.width*item.image.height))})});
   rebuild(true);
 })();

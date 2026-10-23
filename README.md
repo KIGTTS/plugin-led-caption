@@ -22,7 +22,7 @@ node --test tests/layout.test.cjs tests/style.test.cjs
 ./Package.ps1 -SigningKey /path/to/private.der -AndroidSdk /path/to/android-sdk -SkipBuild
 ```
 
-`display.led` 0.1.4 需要插件 API19。HTML/Canvas 按字形实际边界计算单行高度，旋转和缩放保留滚动进度。画布密度上限 1.5，横向长文按可见分片缓存，自动换行按缓存面积分页，静态字幕不持续刷新；启用系统“减弱动态”时改为分段停留阅读。
+`display.led` 0.1.7 需要插件 API25。HTML/Canvas 按字形实际边界计算单行高度，旋转和缩放保留滚动进度。画布密度上限 1.5，横向长文按可见分片缓存，自动换行按缓存面积分页，静态字幕不持续刷新；启用系统“减弱动态”时改为分段停留阅读。
 
 ## 验证
 

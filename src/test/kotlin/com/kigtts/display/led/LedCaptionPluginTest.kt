@@ -21,6 +21,8 @@ class LedCaptionPluginTest {
             assertArrayEquals(File(environment.assets, "led/$it").readBytes(), environment.storage.file("${LedCaptionPlugin.ROOT}/$it").readBytes())
         }
         val outcome = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("你好", "")) as PluginOutcome.SetSubtitleRenderer
+        assertEquals(0xff000000L, outcome.presentation.fullscreenBackground)
+        assertTrue(outcome.presentation.fadeControlsWhenIdle)
         assertEquals(PluginResource(LedCaptionPlugin.ROOT), outcome.root)
         assertEquals("index.html", outcome.mainPage)
     }

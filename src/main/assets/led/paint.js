@@ -14,13 +14,21 @@
     p.fillStyle='rgba(255,255,255,.5)';dot(p,center-radius*.2,center-radius*.28,radius*.21,style.dotShape);
     return image;
   }
+  const backgrounds=new WeakMap();
   function background(target,board,style){
+    const key=[board.width,board.height,board.pitch,board.dpr,style.backgroundColor,style.dotMatrixEnabled,style.dotShape,style.dotSizeFraction].join(':');
+    if(backgrounds.get(target)===key)return;
+    backgrounds.set(target,key);
     const p=target.getContext('2d'),pitch=board.pitch*board.dpr;
     target.width=Math.ceil(board.width*board.dpr);target.height=Math.ceil(board.height*board.dpr);
     p.fillStyle=style.backgroundColor;p.fillRect(0,0,target.width,target.height);
     if(!style.dotMatrixEnabled)return;
-    const sprite=lamp(pitch,style,true),half=sprite.width/2;
-    for(let y=0;y<board.rows;y++)for(let x=0;x<board.columns;x++)p.drawImage(sprite,(board.offsetX+(x+.5)*board.pitch)*board.dpr-half,(board.offsetY+(y+.5)*board.pitch)*board.dpr-half);
+    // One repeating tile replaces thousands of per-bead canvas commands during resizing.
+    const cell=Math.ceil(pitch),tile=createCanvas(cell,cell),t=tile.getContext('2d'),sprite=lamp(cell,style,true),half=sprite.width/2;
+    for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++)t.drawImage(sprite,(x+.5)*cell-half,(y+.5)*cell-half);
+    const pattern=p.createPattern(tile,'repeat');
+    pattern.setTransform(new DOMMatrix().translate(board.offsetX*board.dpr,board.offsetY*board.dpr).scale(pitch/cell));
+    p.fillStyle=pattern;p.fillRect(0,0,target.width,target.height);
   }
   function raster(index,model,geo,style,family,dim){
     const lines=model.pages[index],rows=lines.length*model.lineHeight+(model.padding??6),columns=model.pageWidths[index],pitch=geo.pitch*geo.dpr;
