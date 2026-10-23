@@ -28,8 +28,9 @@
     return {...settings,palette:{core:mix(parts,.9),mid:mix(parts,.55),body:settings.textColor,edge:mix(parts,-.18),rgb:parts.join(',')},
       glowAlpha:settings.glowEnabled?settings.glowStrength:0};
   }
-  function geometry(width,height,dpr,fontPercent,value){
-    const settings=normalize(value),heightLimit=Math.min(.98,.85*Math.sqrt(settings.fontScale)),font=Math.max(12,Math.min(width*Math.max(4,Math.min(75,fontPercent))*settings.fontScale/100,height*heightLimit*settings.displayHeightFraction));
+  function geometry(width,height,dpr,fontPercent,value,insets={}){
+    const availableWidth=Math.max(1,width-(insets.left||0)-(insets.right||0)),availableHeight=Math.max(1,height-(insets.top||0)-(insets.bottom||0));
+    const settings=normalize(value),font=Math.max(12,Math.min(availableWidth*Math.max(1,Math.min(100,fontPercent))*settings.fontScale/100,availableHeight*settings.displayHeightFraction));
     // Beyond physical pixel resolution, extra samples add cost without additional visible detail.
     const pitch=Math.max(1,Math.sqrt(width*height/120000),font*1.2/settings.dotRowsPerLine),columns=Math.max(8,Math.floor(width/pitch)),rows=Math.max(8,Math.floor(height/pitch));
     return {width,height,pitch,columns,rows,dpr:Math.max(1,Math.min(1.5,dpr||1)),offsetX:(width-columns*pitch)/2,offsetY:(height-rows*pitch)/2};

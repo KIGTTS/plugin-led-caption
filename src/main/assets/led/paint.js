@@ -23,18 +23,19 @@
     for(let y=0;y<board.rows;y++)for(let x=0;x<board.columns;x++)p.drawImage(sprite,(board.offsetX+(x+.5)*board.pitch)*board.dpr-half,(board.offsetY+(y+.5)*board.pitch)*board.dpr-half);
   }
   function raster(index,model,geo,style,family,dim){
-    const lines=model.pages[index],rows=lines.length*model.lineHeight+6,columns=model.pageWidths[index],pitch=geo.pitch*geo.dpr;
+    const lines=model.pages[index],rows=lines.length*model.lineHeight+(model.padding??6),columns=model.pageWidths[index],pitch=geo.pitch*geo.dpr;
+    const baseline=model.baseline??(3+model.lineHeight/2),textBaseline=model.baseline===undefined?'middle':'alphabetic';
     const image=createCanvas(columns*pitch,rows*pitch),p=image.getContext('2d');
     const left=model.axis==='x'||style.shortTextAlignment==='start',right=model.axis==='y'&&style.shortTextAlignment==='end';
     const align=left?'left':right?'right':'center',x=left?0:right?columns:columns/2;
     if(!style.dotMatrixEnabled){
-      p.scale(pitch,pitch);p.font='700 '+model.font+'px '+family;p.textAlign=align;p.textBaseline='middle';p.fillStyle=style.textColor;p.globalAlpha=dim;
+      p.scale(pitch,pitch);p.font='700 '+model.font+'px '+family;p.textAlign=align;p.textBaseline=textBaseline;p.fillStyle=style.textColor;p.globalAlpha=dim;
       if(style.glowAlpha){p.shadowColor=style.textColor;p.shadowBlur=model.font*style.glowAlpha*.18;}
-      lines.forEach((line,i)=>p.fillText(line,x,3+(i+.5)*model.lineHeight));return {image,rows,columns};
+      lines.forEach((line,i)=>p.fillText(line,x,baseline+i*model.lineHeight));return {image,rows,columns};
     }
     const mask=createCanvas(columns,rows),sample=mask.getContext('2d',{willReadFrequently:true});
-    sample.font='700 '+model.font+'px '+family;sample.textAlign=align;sample.textBaseline='middle';sample.fillStyle='#fff';
-    lines.forEach((line,i)=>sample.fillText(line,x,3+(i+.5)*model.lineHeight));
+    sample.font='700 '+model.font+'px '+family;sample.textAlign=align;sample.textBaseline=textBaseline;sample.fillStyle='#fff';
+    lines.forEach((line,i)=>sample.fillText(line,x,baseline+i*model.lineHeight));
     const pixels=sample.getImageData(0,0,mask.width,mask.height).data,sprite=lamp(pitch,style),half=sprite.width/2;
     for(let y=0;y<mask.height;y++)for(let x=0;x<mask.width;x++){
       const alpha=pixels[(y*mask.width+x)*4+3]/255;if(alpha<.13)continue;

@@ -7,12 +7,22 @@
   let content={text:'',placeholder:'点击输入文字',fontSizePercent:28,safeArea:layoutApi.safeArea()},boardGeo,geo,model,previous;
   let settings=styleApi.normalize(),style=styleApi.tokens(settings);
   let pageIndex=0,scroll=0,fadeStart=0,pageStart=0,frame=0,lastTick=0,paused=false;
-  let layoutCount=0,rasterCount=0,drawCount=0,resizeTimer=0,pendingUpdate=0,readingTimer=0,pauseAt=0,resizePending=false;
+  let layoutCount=0,rasterCount=0,drawCount=0,resizeTimer=0,pendingUpdate=0,readingTimer=0,pauseAt=0,resizePending=false,textPending=false;
   const metrics=new Map(),cache=new Map();
   function measure(character,font){
     const key=font+':'+character;if(metrics.has(key))return metrics.get(key);
     measureCtx.font='700 '+font+'px '+family;const width=measureCtx.measureText(character).width;
     if(metrics.size>12000)metrics.clear();metrics.set(key,width);return width;
+  }
+  let inkText='',inkSize={ascent:.8,descent:.2};
+  function measureInk(text){
+    if(text!==inkText){
+      inkText=text;measureCtx.font='700 100px '+family;
+      const sample=Array.from(new Set(layoutApi.graphemes(text))).slice(0,256).join('').replace(/[\r\n\t]/g,' ')||'国Ag';
+      const bounds=measureCtx.measureText(sample),ascent=Math.max(0,bounds.actualBoundingBoxAscent),descent=Math.max(0,bounds.actualBoundingBoxDescent);
+      inkSize=ascent+descent>0?{ascent:ascent/100,descent:descent/100}:{ascent:.8,descent:.2};
+    }
+    return inkSize;
   }
   function clearCache(){for(const item of cache.values())paint.release(item);cache.clear();}
   function raster(index){
@@ -68,16 +78,30 @@
     draw(now);if((!reduced.matches&&(previous||now-fadeStart<180))||animated())request();
   }
   function nextPage(now){retainFrame();pageIndex=(pageIndex+1)%model.pages.length;scroll=0;pageStart=now;fadeStart=now;}
-  function rebuild(resize){
+  function rebuild(resize,textChanged=false){
     if(board.clientWidth<1||board.clientHeight<1)return;clearTimeout(readingTimer);readingTimer=0;const now=performance.now();
-    if(resize){paint.release(previous);previous=null;
-      boardGeo=styleApi.geometry(board.clientWidth,board.clientHeight,window.devicePixelRatio,content.fontSizePercent,settings);
+    const oldModel=model,oldGeo=geo,oldPage=pageIndex,oldScroll=scroll;
+    if(textChanged&&model)retainFrame();else{paint.release(previous);previous=null;}
+    if(resize){
+      boardGeo=styleApi.geometry(board.clientWidth,board.clientHeight,window.devicePixelRatio,content.fontSizePercent,settings,content.safeArea);
       geo=scene.viewport(boardGeo,content.safeArea,settings.displayHeightFraction);
-      paint.background(grid,boardGeo,style);lamps.width=Math.ceil(boardGeo.width*boardGeo.dpr);lamps.height=Math.ceil(boardGeo.height*boardGeo.dpr);
-    }else{retainFrame();paint.background(grid,boardGeo,style);}
+      const width=Math.ceil(boardGeo.width*boardGeo.dpr),height=Math.ceil(boardGeo.height*boardGeo.dpr);
+      if(lamps.width!==width)lamps.width=width;if(lamps.height!==height)lamps.height=height;
+    }
+    paint.background(grid,boardGeo,style);
     clearCache();const displayed=content.text.length?content.text:content.placeholder;
-    model=scene.plan(displayed,geo,measure,content.fontSizePercent,settings);layoutCount++;
-    pageIndex=0;scroll=0;pageStart=now;fadeStart=now;lastTick=0;
+    model=scene.plan(displayed,geo,measure,content.fontSizePercent,settings,measureInk);layoutCount++;
+    if(textChanged||!oldModel){pageIndex=0;scroll=0;pageStart=now;fadeStart=now;}
+    else{
+      pageIndex=Math.min(oldPage,model.pages.length-1);fadeStart=now-180;
+      if(oldModel.axis==='x'&&model.axis==='x'&&oldScroll>0&&model.scrolling){
+        const phase=oldScroll/(oldModel.totalColumns+settings.loopGapDp/oldGeo.pitch);
+        scroll=phase*(model.totalColumns+settings.loopGapDp/geo.pitch);
+        pageStart=now-1600-scroll*geo.pitch/settings.scrollSpeedDpPerSecond*1000;
+      }else if(oldModel.axis!==model.axis){pageIndex=0;scroll=0;pageStart=now;}
+      else scroll=oldScroll;
+    }
+    lastTick=0;
     accessible.textContent=displayed;board.setAttribute('aria-label',displayed||'LED 字幕');draw(now);request();
   }
   function update(value){
@@ -88,8 +112,9 @@
     const geometryChanged=incoming.dotRowsPerLine!==settings.dotRowsPerLine||incoming.fontScale!==settings.fontScale||incoming.displayHeightFraction!==settings.displayHeightFraction||next.fontSizePercent!==content.fontSizePercent;
     const areaChanged=JSON.stringify(next.safeArea)!==JSON.stringify(content.safeArea);
     if(next.text===content.text&&next.placeholder===content.placeholder&&next.fontSizePercent===content.fontSizePercent&&geo&&!changed&&!areaChanged)return;
+    textPending=textPending||next.text!==content.text||(next.text.length===0&&next.placeholder!==content.placeholder);
     settings=incoming;style=styleApi.tokens(settings);content=next;resizePending=resizePending||geometryChanged||areaChanged;
-    if(!pendingUpdate)pendingUpdate=requestAnimationFrame(()=>{pendingUpdate=0;const resize=!geo||resizePending;resizePending=false;rebuild(resize);});
+    if(!pendingUpdate)pendingUpdate=requestAnimationFrame(()=>{pendingUpdate=0;const resize=!geo||resizePending,changedText=textPending;resizePending=false;textPending=false;rebuild(resize,changedText);});
   }
   function pause(){if(!paused)pauseAt=performance.now();paused=true;if(frame)cancelAnimationFrame(frame);clearTimeout(readingTimer);readingTimer=0;frame=0;lastTick=0;}
   function resume(){if(paused){const held=performance.now()-pauseAt;pageStart+=held;fadeStart+=held;}paused=false;lastTick=0;if(animated())request();}
@@ -100,6 +125,7 @@
   window.KigttsSubtitle=Object.freeze({ready:true,update,pause,resume,
     snapshot:()=>({text:content.text,placeholder:content.placeholder,settings:{...settings},safeArea:{...content.safeArea},axis:model?.axis,
       page:pageIndex,pages:model?.pages.length||0,scroll,font:model?.font||0,columns:geo?.columns||0,rows:geo?.rows||0,dpr:geo?.dpr||0,
-      layoutCount,rasterCount,drawCount,paused,cachedPages:cache.size,canvasPixels:Math.max(0,...Array.from(cache.values(),item=>item.image.width*item.image.height))})});
+      layoutCount,rasterCount,drawCount,paused,fading:performance.now()-fadeStart<180,viewport:geo?{top:geo.offsetY,height:geo.rows*geo.pitch}:null,
+      cachedPages:cache.size,canvasPixels:Math.max(0,...Array.from(cache.values(),item=>item.image.width*item.image.height))})});
   rebuild(true);
 })();
