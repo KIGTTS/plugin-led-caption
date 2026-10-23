@@ -30,7 +30,7 @@ internal class LedStyle(file: File, renderer: File) {
             choice("scrollDirection", "滚动方向", s.scrollDirection, "left" to "向左", "right" to "向右"),
             slider("loopGapDp", "字幕间距", s.loopGapDp, 24f, 1600f, " dp"),
             choice("shortTextAlignment", "文本对齐", s.shortTextAlignment, "start" to "居左", "center" to "居中", "end" to "居右"),
-            toggle("quickSwipeOpensQuickText", "快速左滑打开快捷文本", s.quickSwipeOpensQuickText),
+            toggle("quickSwipeOpensQuickText", "全屏时左滑打开快捷文本", s.quickSwipeOpensQuickText),
             toggle("keepScreenOn", "保持屏幕常亮", s.keepScreenOn),
             toggle("followSystemBrightness", "亮度跟随系统", s.followSystemBrightness),
             slider("screenBrightness", "屏幕亮度", s.screenBrightness * 100, 10f, 100f, "%"),
