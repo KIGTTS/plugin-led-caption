@@ -1,0 +1,10 @@
+{
+  "style.title": "LED 样式",
+  "style.matrix": "灯珠点阵",
+  "style.shape": "灯珠形状",
+  "style.round": "圆形",
+  "style.square": "方形",
+  "style.density": "灯珠密度",
+  "style.glow": "发光效果",
+  "resource.missing": "缺少 LED 资源：{name}。请重新安装插件。"
+}

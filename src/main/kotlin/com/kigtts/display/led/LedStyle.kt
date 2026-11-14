@@ -7,21 +7,21 @@ import java.io.File
 internal class LedStyle(file: File, renderer: File) {
     private val store = LedSettingsStore(file, renderer)
 
-    fun controls(): PluginOutcome.Controls {
+    fun controls(text: (String) -> String): PluginOutcome.Controls {
         val s = store.value
         fun slider(key: String, title: String, value: Float, min: Float, max: Float, suffix: String = "", steps: Int = 0) =
             PluginControl.Slider(title, "$SET$key", value, min, max, steps, suffix)
         fun toggle(key: String, title: String, value: Boolean) = PluginControl.Toggle(title, "$SET$key", value)
         fun choice(key: String, title: String, value: String, vararg options: Pair<String, String>) =
             PluginControl.Choice(title, "$SET$key", options.map { PluginControlOption(it.first, it.second) }, value)
-        return PluginOutcome.Controls("LED 样式", listOf(
+        return PluginOutcome.Controls(text("style.title"), listOf(
             PluginControl.Color("字幕颜色", "${SET}textColor", argb(s.textColor)),
             PluginControl.Color("背景颜色", "${SET}backgroundColor", argb(s.backgroundColor)),
-            toggle("dotMatrixEnabled", "使用灯珠点阵", s.dotMatrixEnabled),
-            choice("dotShape", "灯珠形状", s.dotShape, "circle" to "圆点", "square" to "方点"),
-            slider("dotRowsPerLine", "灯珠密度", s.dotRowsPerLine.toFloat(), 8f, 256f, " 行", 247),
+            toggle("dotMatrixEnabled", text("style.matrix"), s.dotMatrixEnabled),
+            choice("dotShape", text("style.shape"), s.dotShape, "circle" to text("style.round"), "square" to text("style.square")),
+            slider("dotRowsPerLine", text("style.density"), s.dotRowsPerLine.toFloat(), 8f, 256f, " 行", 247),
             slider("dotSizeFraction", "灯珠尺寸", s.dotSizeFraction * 100, 10f, 100f, "%"),
-            toggle("glowEnabled", "发光效果", s.glowEnabled),
+            toggle("glowEnabled", text("style.glow"), s.glowEnabled),
             slider("glowStrength", "发光强度", s.glowStrength * 100, 0f, 100f, "%"),
             slider("fontScale", "字号", s.fontScale * 100, 50f, 300f, "%"),
             slider("displayHeightFraction", "显示高度", s.displayHeightFraction * 100, 35f, 100f, "%"),
@@ -37,8 +37,8 @@ internal class LedStyle(file: File, renderer: File) {
         ), resetActionId = RESET)
     }
 
-    fun action(action: String, inputs: Map<String, String>): PluginOutcome? {
-        if (action == RESET) { store.reset(); return controls() }
+    fun action(action: String, inputs: Map<String, String>, text: (String) -> String): PluginOutcome? {
+        if (action == RESET) { store.reset(); return controls(text) }
         if (!action.startsWith("style/")) return null
         if (!action.startsWith(SET)) return PluginOutcome.Message("未知样式选项")
         val key = action.removePrefix(SET)

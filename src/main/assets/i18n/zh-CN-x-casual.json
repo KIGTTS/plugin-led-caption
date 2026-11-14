@@ -1,0 +1,10 @@
+{
+  "style.title": "LED 灯牌样式",
+  "style.matrix": "开启灯珠点阵",
+  "style.shape": "灯珠形状",
+  "style.round": "圆点",
+  "style.square": "方点",
+  "style.density": "灯珠疏密",
+  "style.glow": "让灯珠发光",
+  "resource.missing": "没找到灯牌资源 {name}。重新安装插件试试。"
+}

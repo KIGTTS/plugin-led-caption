@@ -28,7 +28,7 @@ class LedSettingsTest {
     }
     @Test fun controlsPersistPercentColorsChoicesAndScreenOptionsWithoutClosing() {
         val dir = temporary.newFolder(); val style = LedStyle(File(dir, "style.properties"), File(dir, "renderer"))
-        fun change(key: String, value: String) = style.action("style/set/$key", mapOf("value" to value))
+        fun change(key: String, value: String) = style.action("style/set/$key", mapOf("value" to value)) { it }
         assertEquals(PluginOutcome.NoAction, change("dotSizeFraction", "75"))
         assertEquals(PluginOutcome.NoAction, change("textColor", "4278420359"))
         assertEquals(PluginOutcome.NoAction, change("scrollDirection", "right"))
@@ -39,13 +39,13 @@ class LedSettingsTest {
         val json = File(dir, "renderer/renderer.json").readText()
         assertTrue(json.contains("\"dotSizeFraction\":0.75")); assertTrue(json.contains("\"scrollDirection\":\"right\""))
         assertTrue(json.contains("\"followSystemBrightness\":true")); assertTrue(json.contains("\"keepScreenOn\":false"))
-        assertTrue(style.controls().controls.filterIsInstance<PluginControl.Slider>().any { it.value == 75f && it.suffix == "%" })
+        assertTrue(style.controls { it }.controls.filterIsInstance<PluginControl.Slider>().any { it.value == 75f && it.suffix == "%" })
     }
     @Test fun malformedCallbacksCannotInjectCodeOrEraseSavedValues() {
         val dir = temporary.newFolder(); val file = File(dir, "style.properties"); val renderer = File(dir, "renderer")
         val style = LedStyle(file, renderer); val before = File(renderer, "renderer.json").readText()
         for ((key, value) in listOf("textColor" to "<script>", "glowStrength" to "NaN", "dotShape" to "triangle", "keepScreenOn" to "yes", "../file" to "1")) {
-            assertTrue(style.action("style/set/$key", mapOf("value" to value)) is PluginOutcome.Message)
+            assertTrue(style.action("style/set/$key", mapOf("value" to value)) { it } is PluginOutcome.Message)
         }
         assertEquals(before, File(renderer, "renderer.json").readText()); assertFalse(file.exists())
     }
@@ -61,9 +61,9 @@ class LedSettingsTest {
     @Test fun largerFontHasIndependentSliderAndSurvivesRestart() {
         val dir = temporary.newFolder(); val file = File(dir, "settings.properties"); val renderer = File(dir, "renderer")
         val style = LedStyle(file, renderer)
-        assertEquals(PluginOutcome.NoAction, style.action("style/set/fontScale", mapOf("value" to "250")))
+        assertEquals(PluginOutcome.NoAction, style.action("style/set/fontScale", mapOf("value" to "250")) { it })
         assertEquals(2.5f, LedSettingsStore(file, renderer).value.fontScale)
-        val slider = style.controls().controls.filterIsInstance<PluginControl.Slider>().single { it.actionId.endsWith("fontScale") }
+        val slider = style.controls { it }.controls.filterIsInstance<PluginControl.Slider>().single { it.actionId.endsWith("fontScale") }
         assertEquals(300f, slider.max); assertEquals(250f, slider.value)
         assertEquals(3f, LedSettings.from(mapOf("fontScale" to "99")).fontScale)
         assertEquals(1f, LedSettings.from(mapOf("fontScale" to "NaN")).fontScale)
