@@ -1,0 +1,17 @@
+{
+  "style.title": "LED style",
+  "style.matrix": "LED matrix",
+  "style.shape": "LED shape",
+  "style.round": "Round",
+  "style.square": "Square",
+  "style.density": "LED density",
+  "style.glow": "Glow",
+  "resource.missing": "Missing LED resource: {name}. Reinstall the plugin.",
+  "action.disable": "Turn off LED captions",
+  "action.enable": "Turn on LED captions",
+  "action.exit_fullscreen": "Exit fullscreen captions",
+  "action.fullscreen": "Fullscreen captions",
+  "resource.not_ready": "The LED display is not ready yet",
+  "resource.unavailable": "LED resources are unavailable. Re-enable the plugin.",
+  "action.unknown": "Unknown action"
+}

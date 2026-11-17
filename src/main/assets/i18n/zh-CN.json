@@ -6,5 +6,12 @@
   "style.square": "方形",
   "style.density": "灯珠密度",
   "style.glow": "发光效果",
-  "resource.missing": "缺少 LED 资源：{name}。请重新安装插件。"
+  "resource.missing": "缺少 LED 资源：{name}。请重新安装插件。",
+  "action.disable": "关闭 LED 字幕",
+  "action.enable": "开启 LED 字幕",
+  "action.exit_fullscreen": "退出全屏字幕",
+  "action.fullscreen": "全屏字幕",
+  "resource.not_ready": "灯板尚未准备完成",
+  "resource.unavailable": "灯板资源不可用，请重新启用插件",
+  "action.unknown": "未知操作"
 }

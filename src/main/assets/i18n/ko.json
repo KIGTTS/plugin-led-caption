@@ -1,0 +1,17 @@
+{
+  "style.title": "LED 스타일",
+  "style.matrix": "LED 매트릭스",
+  "style.shape": "LED 모양",
+  "style.round": "원형",
+  "style.square": "사각형",
+  "style.density": "LED 밀도",
+  "style.glow": "빛 번짐",
+  "resource.missing": "LED 리소스가 없습니다: {name}. 플러그인을 다시 설치하세요.",
+  "action.disable": "LED 자막 끄기",
+  "action.enable": "LED 자막 켜기",
+  "action.exit_fullscreen": "전체 화면 자막 닫기",
+  "action.fullscreen": "전체 화면 자막",
+  "resource.not_ready": "LED 화면이 아직 준비되지 않았습니다",
+  "resource.unavailable": "LED 리소스를 사용할 수 없습니다. 플러그인을 다시 켜세요.",
+  "action.unknown": "알 수 없는 작업"
+}
