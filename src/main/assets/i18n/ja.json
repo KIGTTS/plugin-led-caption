@@ -1,0 +1,17 @@
+{
+  "style.title": "LED スタイル",
+  "style.matrix": "LED マトリクス",
+  "style.shape": "LED の形",
+  "style.round": "丸",
+  "style.square": "四角",
+  "style.density": "LED の密度",
+  "style.glow": "発光",
+  "resource.missing": "LED リソースが見つかりません：{name}。プラグインを再インストールしてください",
+  "action.disable": "LED 字幕を無効にする",
+  "action.enable": "LED 字幕を有効にする",
+  "action.exit_fullscreen": "全画面字幕を終了",
+  "action.fullscreen": "全画面字幕",
+  "resource.not_ready": "LED 表示は準備中です",
+  "resource.unavailable": "LED リソースを利用できません。プラグインを有効にし直してください",
+  "action.unknown": "不明な操作"
+}
