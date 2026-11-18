@@ -15,34 +15,34 @@ internal class LedStyle(file: File, renderer: File) {
         fun choice(key: String, title: String, value: String, vararg options: Pair<String, String>) =
             PluginControl.Choice(title, "$SET$key", options.map { PluginControlOption(it.first, it.second) }, value)
         return PluginOutcome.Controls(text("style.title"), listOf(
-            PluginControl.Color("字幕颜色", "${SET}textColor", argb(s.textColor)),
-            PluginControl.Color("背景颜色", "${SET}backgroundColor", argb(s.backgroundColor)),
+            PluginControl.Color(text("style.text_color"), "${SET}textColor", argb(s.textColor)),
+            PluginControl.Color(text("style.background_color"), "${SET}backgroundColor", argb(s.backgroundColor)),
             toggle("dotMatrixEnabled", text("style.matrix"), s.dotMatrixEnabled),
             choice("dotShape", text("style.shape"), s.dotShape, "circle" to text("style.round"), "square" to text("style.square")),
-            slider("dotRowsPerLine", text("style.density"), s.dotRowsPerLine.toFloat(), 8f, 256f, " 行", 247),
-            slider("dotSizeFraction", "灯珠尺寸", s.dotSizeFraction * 100, 10f, 100f, "%"),
+            slider("dotRowsPerLine", text("style.density"), s.dotRowsPerLine.toFloat(), 8f, 256f, text("style.rows_unit"), 247),
+            slider("dotSizeFraction", text("style.dot_size"), s.dotSizeFraction * 100, 10f, 100f, "%"),
             toggle("glowEnabled", text("style.glow"), s.glowEnabled),
-            slider("glowStrength", "发光强度", s.glowStrength * 100, 0f, 100f, "%"),
-            slider("fontScale", "字号", s.fontScale * 100, 50f, 300f, "%"),
-            slider("displayHeightFraction", "显示高度", s.displayHeightFraction * 100, 35f, 100f, "%"),
-            toggle("adaptiveMultiLine", "内容较多时自动换行", s.adaptiveMultiLine),
-            slider("scrollSpeedDpPerSecond", "滚动速度", s.scrollSpeedDpPerSecond, 24f, 1600f, " dp/s"),
-            choice("scrollDirection", "滚动方向", s.scrollDirection, "left" to "向左", "right" to "向右"),
-            slider("loopGapDp", "字幕间距", s.loopGapDp, 24f, 1600f, " dp"),
-            choice("shortTextAlignment", "文本对齐", s.shortTextAlignment, "start" to "居左", "center" to "居中", "end" to "居右"),
-            toggle("quickSwipeOpensQuickText", "全屏时左滑打开快捷文本", s.quickSwipeOpensQuickText),
-            toggle("keepScreenOn", "保持屏幕常亮", s.keepScreenOn),
-            toggle("followSystemBrightness", "亮度跟随系统", s.followSystemBrightness),
-            slider("screenBrightness", "屏幕亮度", s.screenBrightness * 100, 10f, 100f, "%"),
+            slider("glowStrength", text("style.glow_strength"), s.glowStrength * 100, 0f, 100f, "%"),
+            slider("fontScale", text("style.font_size"), s.fontScale * 100, 50f, 300f, "%"),
+            slider("displayHeightFraction", text("style.height"), s.displayHeightFraction * 100, 35f, 100f, "%"),
+            toggle("adaptiveMultiLine", text("style.wrap"), s.adaptiveMultiLine),
+            slider("scrollSpeedDpPerSecond", text("style.scroll_speed"), s.scrollSpeedDpPerSecond, 24f, 1600f, " dp/s"),
+            choice("scrollDirection", text("style.direction"), s.scrollDirection, "left" to text("style.left"), "right" to text("style.right")),
+            slider("loopGapDp", text("style.gap"), s.loopGapDp, 24f, 1600f, " dp"),
+            choice("shortTextAlignment", text("style.alignment"), s.shortTextAlignment, "start" to text("style.align_left"), "center" to text("style.align_center"), "end" to text("style.align_right")),
+            toggle("quickSwipeOpensQuickText", text("style.swipe"), s.quickSwipeOpensQuickText),
+            toggle("keepScreenOn", text("style.keep_screen_on"), s.keepScreenOn),
+            toggle("followSystemBrightness", text("style.system_brightness"), s.followSystemBrightness),
+            slider("screenBrightness", text("style.brightness"), s.screenBrightness * 100, 10f, 100f, "%"),
         ), resetActionId = RESET)
     }
 
     fun action(action: String, inputs: Map<String, String>, text: (String) -> String): PluginOutcome? {
         if (action == RESET) { store.reset(); return controls(text) }
         if (!action.startsWith("style/")) return null
-        if (!action.startsWith(SET)) return PluginOutcome.Message("未知样式选项")
+        if (!action.startsWith(SET)) return PluginOutcome.Message(text("style.unknown_option"))
         val key = action.removePrefix(SET)
-        val input = inputs["value"] ?: return PluginOutcome.Message("没有收到设置值")
+        val input = inputs["value"] ?: return PluginOutcome.Message(text("style.no_value"))
         val value = when {
             key in COLORS -> input.toLongOrNull()?.takeIf { it in 0..0xFFFFFFFFL }?.let { "#" + (it and 0xFFFFFF).toString(16).padStart(6, '0').uppercase() }
             key in PERCENT -> input.toFloatOrNull()?.takeIf(Float::isFinite)?.let { "${it / 100f}" }
@@ -50,8 +50,8 @@ internal class LedStyle(file: File, renderer: File) {
             key in BOOLEANS -> input.takeIf { it == "true" || it == "false" }
             key in CHOICES -> input.takeIf { it in CHOICES.getValue(key) }
             else -> null
-        } ?: return PluginOutcome.Message("设置值无效")
-        if (!store.update(key, value)) return PluginOutcome.Message("未知样式选项")
+        } ?: return PluginOutcome.Message(text("style.invalid_value"))
+        if (!store.update(key, value)) return PluginOutcome.Message(text("style.unknown_option"))
         return PluginOutcome.NoAction
     }
 
