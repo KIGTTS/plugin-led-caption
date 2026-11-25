@@ -20,6 +20,8 @@ class LedCaptionPluginTest {
         val outcome = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("你好", "")) as PluginOutcome.SetNativeSubtitleRenderer
         assertEquals(0xff000000L, outcome.presentation.fullscreenBackground)
         assertTrue(outcome.presentation.fadeControlsWhenIdle)
+        assertTrue(outcome.presentation.homeChrome.fadeHeaderWhenIdle)
+        assertTrue(outcome.presentation.homeChrome.fadeDockWhenIdle)
         assertEquals(NativeSubtitleRenderer.Led(), outcome.renderer)
         assertEquals(AppearancePatch(mode = AppearanceMode.DARK, backgroundDim = 1f, pureBlackDark = true), outcome.appearance)
         assertTrue(outcome.collapseQuickText)

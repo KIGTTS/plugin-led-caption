@@ -22,7 +22,7 @@ node --test tests/layout.test.cjs tests/style.test.cjs
 ./Package.ps1 -SigningKey /path/to/private.der -AndroidSdk /path/to/android-sdk -SkipBuild
 ```
 
-`display.led` 0.1.12 需要宿主插件 API37。样式通过 `SetNativeSubtitleRenderer` 交给宿主的 Canvas 绘制。长文复用字形缓存，滚动只移动可见部分。减少动效时定时分段显示。
+`display.led` 0.1.13 需要宿主插件 API38。样式通过 `SetNativeSubtitleRenderer` 交给宿主的 Canvas 绘制。滚动只改变固定灯珠的亮度，双指缩放松手时保存字号。启用 LED 时，主界面顶栏和快捷文本底栏会在闲置后淡化，触摸恢复。展开快捷文本或编辑时保持全亮。减少动效时定时分段显示。
 
 ## 验证
 
