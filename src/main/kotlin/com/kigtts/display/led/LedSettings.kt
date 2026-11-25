@@ -9,7 +9,7 @@ internal data class LedSettings(
     val backgroundColor: String = "#000000",
     val dotMatrixEnabled: Boolean = true,
     val dotShape: String = "circle",
-    val dotRowsPerLine: Int = 24,
+    val dotRowsPerLine: Int = 16,
     val dotSizeFraction: Float = .58f,
     val glowEnabled: Boolean = true,
     val glowStrength: Float = .42f,
@@ -49,7 +49,11 @@ internal data class LedSettings(
             fun choice(key: String, fallback: String, vararg options: String) = raw[key]?.takeIf { it in options } ?: fallback
             // 0.1.1 stored four named presets. Upgrade them once, keeping every custom value.
             val legacyColor = COLORS[raw["color"]] ?: defaults.textColor
-            val legacyRows = when (raw["density"]) { "fine" -> 30f; "bold" -> 18f; else -> 24f }
+            val legacyRows = when (raw["density"]) {
+                "fine" -> 30f
+                "bold" -> 18f
+                else -> defaults.dotRowsPerLine.toFloat()
+            }
             val legacyGlow = when (raw["glow"]) { "soft" -> .2f; "bright" -> .8f; else -> defaults.glowStrength }
             val legacySpeed = when (raw["speed"]) { "slow" -> 36f; "fast" -> 128f; else -> defaults.scrollSpeedDpPerSecond }
             return LedSettings(

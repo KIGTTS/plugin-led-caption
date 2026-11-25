@@ -15,7 +15,9 @@ internal class LedSettingsStore(private val file: File) {
     }
     fun update(key: String, input: String): Boolean {
         if (key !in value.values()) return false
-        save(LedSettings.from(value.values() + (key to input))); return true
+        val next = LedSettings.from(value.values() + (key to input))
+        if (next != value) save(next)
+        return true
     }
     fun reset() { save(LedSettings()) }
     private fun save(next: LedSettings) {

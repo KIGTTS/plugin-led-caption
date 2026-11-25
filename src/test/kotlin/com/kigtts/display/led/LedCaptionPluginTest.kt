@@ -22,7 +22,7 @@ class LedCaptionPluginTest {
         assertTrue(outcome.presentation.fadeControlsWhenIdle)
         assertTrue(outcome.presentation.homeChrome.fadeHeaderWhenIdle)
         assertTrue(outcome.presentation.homeChrome.fadeDockWhenIdle)
-        assertEquals(NativeSubtitleRenderer.Led(), outcome.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), outcome.renderer)
         assertEquals(AppearancePatch(mode = AppearanceMode.DARK, backgroundDim = 1f, pureBlackDark = true), outcome.appearance)
         assertTrue(outcome.collapseQuickText)
     }
@@ -91,7 +91,7 @@ class LedCaptionPluginTest {
         assertEquals(4282501875L, restored.controls.filterIsInstance<PluginControl.Color>().first().value)
         assertEquals(18f, restored.controls.filterIsInstance<PluginControl.Slider>().first().value)
         val reset = reloaded.execute("style/reset", context) as PluginOutcome.SetNativeSubtitleRenderer
-        assertEquals(NativeSubtitleRenderer.Led(), reset.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), reset.renderer)
         assertNotNull(reset.controls)
     }
     @Test fun settingsRejectUnknownValuesAndRecoverFromCorruptedData() = runBlocking {
@@ -99,7 +99,7 @@ class LedCaptionPluginTest {
         environment.storage.file("config/led-style.properties").apply { parentFile.mkdirs(); writeText("color=<script>\ndensity=other") }
         val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val display = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer
-        assertEquals(NativeSubtitleRenderer.Led(), display.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), display.renderer)
         assertTrue(plugin.execute("style/color/../red", PluginContext("", "")) is PluginOutcome.Message)
     }
 }

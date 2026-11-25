@@ -1,8 +1,8 @@
 {
   "id": "display.led",
   "name": "LED 灯珠字幕",
-  "version": "0.1.13",
-  "versionCode": 14,
+  "version": "0.1.14",
+  "versionCode": 15,
   "entryClass": "com.kigtts.display.led.LedCaptionPlugin",
   "apiVersion": 38,
   "minSdk": 26,
