@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const api=require('../src/main/assets/led/layout.js');
+const api=require('./legacy-renderer/layout.js');
 const measure=(character,font)=>character.codePointAt(0)>255?font:font*.6;
 
 test('safe text viewport preserves the full card lattice in both orientations',()=>{

@@ -37,13 +37,7 @@ internal data class LedSettings(
         "followSystemBrightness" to "$followSystemBrightness", "screenBrightness" to "$screenBrightness",
     )
 
-    fun json(): String = values().entries.joinToString(",", "{", "}") { (key, value) ->
-        val literal = if (key in STRING_KEYS) "\"$value\"" else value
-        "\"$key\":$literal"
-    }
-
     companion object {
-        val STRING_KEYS = setOf("textColor", "backgroundColor", "dotShape", "scrollDirection", "shortTextAlignment")
         private val COLORS = mapOf("amber" to "#FFA424", "white" to "#C8E0FF", "green" to "#4EE48F", "cyan" to "#41CAF3", "rose" to "#FF60B1")
         fun load(properties: Properties): LedSettings = from(properties.stringPropertyNames().associateWith { properties.getProperty(it) })
 

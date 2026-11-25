@@ -4,8 +4,25 @@ import com.kigtts.plugin.api.*
 import java.io.File
 
 /** Native controls send bounded values back; the renderer remains mounted during every adjustment. */
-internal class LedStyle(file: File, renderer: File) {
-    private val store = LedSettingsStore(file, renderer)
+internal class LedStyle(file: File) {
+    private val store = LedSettingsStore(file)
+
+    fun renderer(): NativeSubtitleRenderer.Led = store.value.let { s ->
+        NativeSubtitleRenderer.Led(
+            foreground = argb(s.textColor), background = argb(s.backgroundColor),
+            dotMatrix = s.dotMatrixEnabled, squareDots = s.dotShape == "square", dotRows = s.dotRowsPerLine,
+            dotSize = s.dotSizeFraction, glow = if (s.glowEnabled) s.glowStrength else 0f,
+            displayHeight = s.displayHeightFraction, fontScale = s.fontScale, wrap = s.adaptiveMultiLine,
+            scrollSpeed = s.scrollSpeedDpPerSecond, scrollRight = s.scrollDirection == "right", loopGap = s.loopGapDp,
+            alignment = when (s.shortTextAlignment) {
+                "start" -> LedAlignment.START
+                "end" -> LedAlignment.END
+                else -> LedAlignment.CENTER
+            },
+            quickSwipe = s.quickSwipeOpensQuickText, keepScreenOn = s.keepScreenOn,
+            screenBrightness = s.screenBrightness.takeUnless { s.followSystemBrightness },
+        )
+    }
 
     fun controls(text: (String) -> String): PluginOutcome.Controls {
         val s = store.value

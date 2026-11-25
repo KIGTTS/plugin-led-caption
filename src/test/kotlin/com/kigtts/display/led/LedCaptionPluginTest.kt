@@ -15,16 +15,14 @@ class LedCaptionPluginTest {
         override val assets = assets
         override suspend fun download(url: String, relativePath: String, sha256: String?): File = error("LED must never use network")
     }
-    @Test fun copiesCompleteOfflineRendererBeforeSelectingIt() = runBlocking {
+    @Test fun opensNativeRendererWithSessionOnlyAppearance() = runBlocking {
         val environment = environment(); val plugin = LedCaptionPlugin(); plugin.attach(environment)
-        LedCaptionPlugin.FILES.forEach {
-            assertArrayEquals(File(environment.assets, "led/$it").readBytes(), environment.storage.file("${LedCaptionPlugin.ROOT}/$it").readBytes())
-        }
-        val outcome = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("你好", "")) as PluginOutcome.SetSubtitleRenderer
+        val outcome = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("你好", "")) as PluginOutcome.SetNativeSubtitleRenderer
         assertEquals(0xff000000L, outcome.presentation.fullscreenBackground)
         assertTrue(outcome.presentation.fadeControlsWhenIdle)
-        assertEquals(PluginResource(LedCaptionPlugin.ROOT), outcome.root)
-        assertEquals("index.html", outcome.mainPage)
+        assertEquals(NativeSubtitleRenderer.Led(), outcome.renderer)
+        assertEquals(AppearancePatch(mode = AppearanceMode.DARK, backgroundDim = 1f, pureBlackDark = true), outcome.appearance)
+        assertTrue(outcome.collapseQuickText)
     }
     @Test fun iconSwitchPrecedesListeningAndDoesNotOpenASeparatePage() = runBlocking {
         val plugin = LedCaptionPlugin(); plugin.attach(environment())
@@ -34,20 +32,18 @@ class LedCaptionPluginTest {
         assertTrue(plugin.contributions.drawerEntries.isEmpty())
         plugin.execute(action.id, PluginContext("", ""))
         assertEquals("lightbulb", plugin.contributions.actions.first { it.id == LedCaptionPlugin.TOGGLE }.symbol)
-        assertNull((plugin.execute(action.id, PluginContext("", "")) as PluginOutcome.SetSubtitleRenderer).root)
+        assertNull((plugin.execute(action.id, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer).renderer)
     }
     @Test fun reattachAndCloseResetSessionInsteadOfPersistingAStaleToggle() = runBlocking {
         val plugin = LedCaptionPlugin(); val environment = environment(); plugin.attach(environment)
         plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")); plugin.close()
         assertEquals("lightbulb_outline", plugin.contributions.actions.single().symbol)
         plugin.attach(environment)
-        assertNotNull((plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetSubtitleRenderer).root)
+        assertNotNull((plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer).renderer)
     }
-    @Test fun missingAssetsFailWithoutSelectingARenderer() = runBlocking {
-        val plugin = LedCaptionPlugin()
-        try { plugin.attach(environment(temporary.newFolder())); fail("Missing page must not be selected") }
-        catch (_: IllegalArgumentException) { }
-        assertEquals("lightbulb_outline", plugin.contributions.actions.single().symbol)
+    @Test fun doesNotRequireHtmlAssets() = runBlocking {
+        val plugin = LedCaptionPlugin(); plugin.attach(environment(temporary.newFolder()))
+        assertNotNull((plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer).renderer)
     }
     @Test fun unrelatedActionNeverChangesTheSubtitle() = runBlocking {
         val plugin = LedCaptionPlugin(); plugin.attach(environment())
@@ -59,10 +55,10 @@ class LedCaptionPluginTest {
         plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", ""))
         val recovered = PluginContext("", "", inputs = mapOf(LedCaptionPlugin.HOST_RENDERER to ""))
         assertEquals("lightbulb_outline", plugin.contributions(recovered).actions.single().symbol)
-        assertNotNull((plugin.execute(LedCaptionPlugin.TOGGLE, recovered) as PluginOutcome.SetSubtitleRenderer).root)
+        assertNotNull((plugin.execute(LedCaptionPlugin.TOGGLE, recovered) as PluginOutcome.SetNativeSubtitleRenderer).renderer)
         val selected = recovered.copy(inputs = mapOf(LedCaptionPlugin.HOST_RENDERER to "display.led"))
         assertEquals("lightbulb", plugin.contributions(selected).actions.first { it.id == LedCaptionPlugin.TOGGLE }.symbol)
-        assertNull((plugin.execute(LedCaptionPlugin.TOGGLE, selected) as PluginOutcome.SetSubtitleRenderer).root)
+        assertNull((plugin.execute(LedCaptionPlugin.TOGGLE, selected) as PluginOutcome.SetNativeSubtitleRenderer).renderer)
     }
     @Test fun enabledRendererAddsStyleAtFontSizeSideAndFullscreenAtReadingSide() = runBlocking {
         val plugin = LedCaptionPlugin(); plugin.attach(environment())
@@ -80,28 +76,28 @@ class LedCaptionPluginTest {
     }
     @Test fun settingsUseNativeDialogsAndPersistWithoutResettingCurrentCaption() = runBlocking {
         val environment = environment(); val plugin = LedCaptionPlugin(); plugin.attach(environment)
-        val context = PluginContext("保留当前文字", "正在聆听")
+        val context = PluginContext("保留当前文字", "正在聆听", inputs = mapOf(LedCaptionPlugin.HOST_RENDERER to "display.led"))
         val controls = plugin.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
         assertEquals(19, controls.controls.size)
         assertEquals(2, controls.controls.filterIsInstance<PluginControl.Color>().size)
         assertEquals(8, controls.controls.filterIsInstance<PluginControl.Slider>().size)
         assertEquals(3, controls.controls.filterIsInstance<PluginControl.Choice>().size)
-        assertTrue(plugin.execute("style/set/textColor", context.copy(inputs = mapOf("value" to "4282501875"))) is PluginOutcome.NoAction)
-        assertTrue(plugin.execute("style/set/dotRowsPerLine", context.copy(inputs = mapOf("value" to "18"))) is PluginOutcome.NoAction)
-        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"textColor\":\"#41CAF3\""))
+        assertTrue(plugin.execute("style/set/textColor", context.copy(inputs = context.inputs + ("value" to "4282501875"))) is PluginOutcome.SetNativeSubtitleRenderer)
+        assertTrue(plugin.execute("style/set/dotRowsPerLine", context.copy(inputs = context.inputs + ("value" to "18"))) is PluginOutcome.SetNativeSubtitleRenderer)
         val reloaded = LedCaptionPlugin(); reloaded.attach(environment)
         val restored = reloaded.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
         assertEquals(4282501875L, restored.controls.filterIsInstance<PluginControl.Color>().first().value)
         assertEquals(18f, restored.controls.filterIsInstance<PluginControl.Slider>().first().value)
-        assertTrue(reloaded.execute("style/reset", context) is PluginOutcome.Controls)
-        assertTrue(environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText().contains("\"textColor\":\"#FFFFFF\""))
+        val reset = reloaded.execute("style/reset", context) as PluginOutcome.SetNativeSubtitleRenderer
+        assertEquals(NativeSubtitleRenderer.Led(), reset.renderer)
+        assertNotNull(reset.controls)
     }
     @Test fun settingsRejectUnknownValuesAndRecoverFromCorruptedData() = runBlocking {
         val environment = environment()
         environment.storage.file("config/led-style.properties").apply { parentFile.mkdirs(); writeText("color=<script>\ndensity=other") }
         val plugin = LedCaptionPlugin(); plugin.attach(environment)
-        val config = environment.storage.file("${LedCaptionPlugin.ROOT}/renderer.json").readText()
-        assertTrue(config.contains("\"textColor\":\"#FFFFFF\"")); assertFalse(config.contains("<script>"))
+        val display = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer
+        assertEquals(NativeSubtitleRenderer.Led(), display.renderer)
         assertTrue(plugin.execute("style/color/../red", PluginContext("", "")) is PluginOutcome.Message)
     }
 }

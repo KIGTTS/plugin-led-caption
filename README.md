@@ -10,7 +10,7 @@
 - 排版：自动换行、滚动速度与方向、循环间距、文本对齐、左滑快捷文本开关。
 - 屏幕：保持常亮、跟随系统亮度、手动亮度。
 
-显示只在本次会话启用，重启软件后恢复普通字幕。图像、网页等媒体快捷文本继续使用原有显示方式。
+灯板在本次会话生效。打开时首页切换纯黑暗色、遮罩到 100%，并收起快捷文本。退出灯板或离开首页时恢复页面外观。样式继续保存，图像、网页等媒体仍按原方式显示。
 
 ## 构建
 
@@ -22,19 +22,10 @@ node --test tests/layout.test.cjs tests/style.test.cjs
 ./Package.ps1 -SigningKey /path/to/private.der -AndroidSdk /path/to/android-sdk -SkipBuild
 ```
 
-`display.led` 0.1.7 需要插件 API25。HTML/Canvas 按字形实际边界计算单行高度，旋转和缩放保留滚动进度。画布密度上限 1.5，横向长文按可见分片缓存，自动换行按缓存面积分页，静态字幕不持续刷新；启用系统“减弱动态”时改为分段停留阅读。
+`display.led` 0.1.12 需要宿主插件 API37。样式通过 `SetNativeSubtitleRenderer` 交给宿主的 Canvas 绘制。长文复用字形缓存，滚动只移动可见部分。减少动效时定时分段显示。
 
 ## 验证
 
-JVM 测试覆盖资源交付、开关位置、会话恢复和宿主选择状态。Node 测试覆盖 Unicode 字素、横竖屏排版、英文单词换行、旧样式迁移、参数边界与长文缓存上限。
-
-浏览器验收脚本位于 `tests/browser-check.js`。先在 `src/main/assets/led` 启动本地 HTTP 服务（端口 8768），再通过 Playwright CLI 的独立会话执行：
-
-```powershell
-npx --yes --package @playwright/cli playwright-cli -s=led-caption open http://127.0.0.1:8768/index.html
-npx --yes --package @playwright/cli playwright-cli -s=led-caption run-code --filename tests/browser-check.js
-```
-
-截图存入 `output/playwright/`。该检查验证实际前景像素、旋转后显示、长文滚动、流式合并、暂停恢复、高 DPI、占位文本与减弱动态。
+JVM 测试覆盖原生声明、开关位置、样式保存、旧预设迁移和宿主选择状态。旧 WebView 渲染器保留在 `tests/legacy-renderer` 作离线对照。Node 测试仍可验证旧版的 Unicode、排版和缓存预算。生产插件包只携带原生声明和配置所需资源。
 
 MIT License。

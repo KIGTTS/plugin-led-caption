@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const api=require('../src/main/assets/led/style.js'),scene=require('../src/main/assets/led/scene.js');
+const api=require('./legacy-renderer/style.js'),scene=require('./legacy-renderer/scene.js');
 const measure=(character,font)=>character.codePointAt(0)>255?font:font*.6;
 test('all nineteen settings have safe typed defaults and malformed values never enter paint',()=>{
   assert.equal(Object.keys(api.defaults).length,19);
