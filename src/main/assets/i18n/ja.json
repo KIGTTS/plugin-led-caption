@@ -19,7 +19,6 @@
   "style.rows_unit": " 行",
   "style.dot_size": "LED サイズ",
   "style.glow_strength": "発光の強さ",
-  "style.font_size": "文字サイズ",
   "style.height": "表示の高さ",
   "style.wrap": "長いテキストを折り返す",
   "style.scroll_speed": "スクロール速度",
@@ -31,10 +30,6 @@
   "style.align_left": "左揃え",
   "style.align_center": "中央揃え",
   "style.align_right": "右揃え",
-  "style.swipe": "全画面で左にスワイプして定型文を開く",
-  "style.keep_screen_on": "画面を常にオンにする",
-  "style.system_brightness": "システムの明るさを使う",
-  "style.brightness": "画面の明るさ",
   "style.unknown_option": "不明なスタイル項目",
   "style.no_value": "設定値を受け取れませんでした",
   "style.invalid_value": "無効な設定値"

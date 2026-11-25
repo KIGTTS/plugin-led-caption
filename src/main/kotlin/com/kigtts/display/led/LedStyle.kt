@@ -12,15 +12,14 @@ internal class LedStyle(file: File) {
             foreground = argb(s.textColor), background = argb(s.backgroundColor),
             dotMatrix = s.dotMatrixEnabled, squareDots = s.dotShape == "square", dotRows = s.dotRowsPerLine,
             dotSize = s.dotSizeFraction, glow = if (s.glowEnabled) s.glowStrength else 0f,
-            displayHeight = s.displayHeightFraction, fontScale = s.fontScale, wrap = s.adaptiveMultiLine,
+            displayHeight = s.displayHeightFraction, wrap = s.adaptiveMultiLine,
             scrollSpeed = s.scrollSpeedDpPerSecond, scrollRight = s.scrollDirection == "right", loopGap = s.loopGapDp,
             alignment = when (s.shortTextAlignment) {
                 "start" -> LedAlignment.START
                 "end" -> LedAlignment.END
                 else -> LedAlignment.CENTER
             },
-            quickSwipe = s.quickSwipeOpensQuickText, keepScreenOn = s.keepScreenOn,
-            screenBrightness = s.screenBrightness.takeUnless { s.followSystemBrightness },
+            quickSwipe = false, keepScreenOn = false, screenBrightness = null,
         )
     }
 
@@ -40,17 +39,12 @@ internal class LedStyle(file: File) {
             slider("dotSizeFraction", text("style.dot_size"), s.dotSizeFraction * 100, 10f, 100f, "%"),
             toggle("glowEnabled", text("style.glow"), s.glowEnabled),
             slider("glowStrength", text("style.glow_strength"), s.glowStrength * 100, 0f, 100f, "%"),
-            slider("fontScale", text("style.font_size"), s.fontScale * 100, 50f, 300f, "%"),
             slider("displayHeightFraction", text("style.height"), s.displayHeightFraction * 100, 35f, 100f, "%"),
             toggle("adaptiveMultiLine", text("style.wrap"), s.adaptiveMultiLine),
             slider("scrollSpeedDpPerSecond", text("style.scroll_speed"), s.scrollSpeedDpPerSecond, 24f, 1600f, " dp/s"),
             choice("scrollDirection", text("style.direction"), s.scrollDirection, "left" to text("style.left"), "right" to text("style.right")),
             slider("loopGapDp", text("style.gap"), s.loopGapDp, 24f, 1600f, " dp"),
             choice("shortTextAlignment", text("style.alignment"), s.shortTextAlignment, "start" to text("style.align_left"), "center" to text("style.align_center"), "end" to text("style.align_right")),
-            toggle("quickSwipeOpensQuickText", text("style.swipe"), s.quickSwipeOpensQuickText),
-            toggle("keepScreenOn", text("style.keep_screen_on"), s.keepScreenOn),
-            toggle("followSystemBrightness", text("style.system_brightness"), s.followSystemBrightness),
-            slider("screenBrightness", text("style.brightness"), s.screenBrightness * 100, 10f, 100f, "%"),
         ), resetActionId = RESET)
     }
 
@@ -77,9 +71,9 @@ internal class LedStyle(file: File) {
         const val SET = "style/set/"
         const val RESET = "style/reset"
         private val COLORS = setOf("textColor", "backgroundColor")
-        private val PERCENT = setOf("dotSizeFraction", "glowStrength", "displayHeightFraction", "screenBrightness", "fontScale")
+        private val PERCENT = setOf("dotSizeFraction", "glowStrength", "displayHeightFraction")
         private val NUMBERS = setOf("dotRowsPerLine", "scrollSpeedDpPerSecond", "loopGapDp")
-        private val BOOLEANS = setOf("dotMatrixEnabled", "glowEnabled", "adaptiveMultiLine", "quickSwipeOpensQuickText", "keepScreenOn", "followSystemBrightness")
+        private val BOOLEANS = setOf("dotMatrixEnabled", "glowEnabled", "adaptiveMultiLine")
         private val CHOICES = mapOf("dotShape" to setOf("circle", "square"), "scrollDirection" to setOf("left", "right"), "shortTextAlignment" to setOf("start", "center", "end"))
         private fun argb(color: String): Long = 0xFF000000L or color.removePrefix("#").toLong(16)
     }

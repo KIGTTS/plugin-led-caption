@@ -14,27 +14,20 @@ internal data class LedSettings(
     val glowEnabled: Boolean = true,
     val glowStrength: Float = .42f,
     val displayHeightFraction: Float = .72f,
-    val fontScale: Float = 1f,
     val adaptiveMultiLine: Boolean = false,
     val scrollSpeedDpPerSecond: Float = 72f,
     val scrollDirection: String = "left",
     val loopGapDp: Float = 96f,
     val shortTextAlignment: String = "center",
-    val quickSwipeOpensQuickText: Boolean = true,
-    val keepScreenOn: Boolean = true,
-    val followSystemBrightness: Boolean = false,
-    val screenBrightness: Float = 1f,
 ) {
     fun values(): Map<String, String> = linkedMapOf(
         "textColor" to textColor, "backgroundColor" to backgroundColor,
         "dotMatrixEnabled" to "$dotMatrixEnabled", "dotShape" to dotShape,
         "dotRowsPerLine" to "$dotRowsPerLine", "dotSizeFraction" to "$dotSizeFraction",
         "glowEnabled" to "$glowEnabled", "glowStrength" to "$glowStrength",
-        "displayHeightFraction" to "$displayHeightFraction", "fontScale" to "$fontScale", "adaptiveMultiLine" to "$adaptiveMultiLine",
+        "displayHeightFraction" to "$displayHeightFraction", "adaptiveMultiLine" to "$adaptiveMultiLine",
         "scrollSpeedDpPerSecond" to "$scrollSpeedDpPerSecond", "scrollDirection" to scrollDirection,
         "loopGapDp" to "$loopGapDp", "shortTextAlignment" to shortTextAlignment,
-        "quickSwipeOpensQuickText" to "$quickSwipeOpensQuickText", "keepScreenOn" to "$keepScreenOn",
-        "followSystemBrightness" to "$followSystemBrightness", "screenBrightness" to "$screenBrightness",
     )
 
     companion object {
@@ -62,12 +55,9 @@ internal data class LedSettings(
                 dotRowsPerLine = number("dotRowsPerLine", legacyRows, 8f, 256f).roundToInt(),
                 dotSizeFraction = number("dotSizeFraction", .58f, .1f, 1f), glowEnabled = boolean("glowEnabled", true),
                 glowStrength = number("glowStrength", legacyGlow, 0f, 1f), displayHeightFraction = number("displayHeightFraction", .72f, .35f, 1f),
-                fontScale = number("fontScale", 1f, .5f, 3f),
                 adaptiveMultiLine = boolean("adaptiveMultiLine", false), scrollSpeedDpPerSecond = number("scrollSpeedDpPerSecond", legacySpeed, 24f, 1600f),
                 scrollDirection = choice("scrollDirection", "left", "left", "right"), loopGapDp = number("loopGapDp", 96f, 24f, 1600f),
                 shortTextAlignment = choice("shortTextAlignment", "center", "start", "center", "end"),
-                quickSwipeOpensQuickText = boolean("quickSwipeOpensQuickText", true), keepScreenOn = boolean("keepScreenOn", true),
-                followSystemBrightness = boolean("followSystemBrightness", false), screenBrightness = number("screenBrightness", 1f, .1f, 1f),
             )
         }
     }

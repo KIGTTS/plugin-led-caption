@@ -22,7 +22,7 @@ class LedCaptionPluginTest {
         assertTrue(outcome.presentation.fadeControlsWhenIdle)
         assertTrue(outcome.presentation.homeChrome.fadeHeaderWhenIdle)
         assertTrue(outcome.presentation.homeChrome.fadeDockWhenIdle)
-        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), outcome.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16, quickSwipe = false, keepScreenOn = false, screenBrightness = null), outcome.renderer)
         assertEquals(AppearancePatch(mode = AppearanceMode.DARK, backgroundDim = 1f, pureBlackDark = true), outcome.appearance)
         assertTrue(outcome.collapseQuickText)
     }
@@ -80,9 +80,9 @@ class LedCaptionPluginTest {
         val environment = environment(); val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val context = PluginContext("保留当前文字", "正在聆听", inputs = mapOf(LedCaptionPlugin.HOST_RENDERER to "display.led"))
         val controls = plugin.execute(LedStyle.OPEN, context) as PluginOutcome.Controls
-        assertEquals(19, controls.controls.size)
+        assertEquals(14, controls.controls.size)
         assertEquals(2, controls.controls.filterIsInstance<PluginControl.Color>().size)
-        assertEquals(8, controls.controls.filterIsInstance<PluginControl.Slider>().size)
+        assertEquals(6, controls.controls.filterIsInstance<PluginControl.Slider>().size)
         assertEquals(3, controls.controls.filterIsInstance<PluginControl.Choice>().size)
         assertTrue(plugin.execute("style/set/textColor", context.copy(inputs = context.inputs + ("value" to "4282501875"))) is PluginOutcome.SetNativeSubtitleRenderer)
         assertTrue(plugin.execute("style/set/dotRowsPerLine", context.copy(inputs = context.inputs + ("value" to "18"))) is PluginOutcome.SetNativeSubtitleRenderer)
@@ -91,7 +91,7 @@ class LedCaptionPluginTest {
         assertEquals(4282501875L, restored.controls.filterIsInstance<PluginControl.Color>().first().value)
         assertEquals(18f, restored.controls.filterIsInstance<PluginControl.Slider>().first().value)
         val reset = reloaded.execute("style/reset", context) as PluginOutcome.SetNativeSubtitleRenderer
-        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), reset.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16, quickSwipe = false, keepScreenOn = false, screenBrightness = null), reset.renderer)
         assertNotNull(reset.controls)
     }
     @Test fun settingsRejectUnknownValuesAndRecoverFromCorruptedData() = runBlocking {
@@ -99,7 +99,7 @@ class LedCaptionPluginTest {
         environment.storage.file("config/led-style.properties").apply { parentFile.mkdirs(); writeText("color=<script>\ndensity=other") }
         val plugin = LedCaptionPlugin(); plugin.attach(environment)
         val display = plugin.execute(LedCaptionPlugin.TOGGLE, PluginContext("", "")) as PluginOutcome.SetNativeSubtitleRenderer
-        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16), display.renderer)
+        assertEquals(NativeSubtitleRenderer.Led(dotRows = 16, quickSwipe = false, keepScreenOn = false, screenBrightness = null), display.renderer)
         assertTrue(plugin.execute("style/color/../red", PluginContext("", "")) is PluginOutcome.Message)
     }
 }

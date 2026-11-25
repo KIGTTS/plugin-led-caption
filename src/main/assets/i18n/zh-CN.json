@@ -19,7 +19,6 @@
   "style.rows_unit": " 行",
   "style.dot_size": "灯珠尺寸",
   "style.glow_strength": "发光强度",
-  "style.font_size": "字号",
   "style.height": "显示高度",
   "style.wrap": "内容较多时自动换行",
   "style.scroll_speed": "滚动速度",
@@ -31,10 +30,6 @@
   "style.align_left": "居左",
   "style.align_center": "居中",
   "style.align_right": "居右",
-  "style.swipe": "全屏时左滑打开快捷文本",
-  "style.keep_screen_on": "保持屏幕常亮",
-  "style.system_brightness": "亮度跟随系统",
-  "style.brightness": "屏幕亮度",
   "style.unknown_option": "未知样式选项",
   "style.no_value": "没有收到设置值",
   "style.invalid_value": "设置值无效"
