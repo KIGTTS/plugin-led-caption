@@ -4,7 +4,7 @@ import com.kigtts.plugin.api.*
 /** Session-only switch. The host draws the display and retains its editable text. */
 class LedCaptionPlugin : KigPlugin {
     override val descriptor = PluginDescriptor("display.led", "LED 灯珠字幕",
-        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "0.1.15", license = "MIT")
+        "让输入、快捷短语与聆听字幕变成一块发光的灯板", version = "1.0.0", license = "MIT")
     override val localization = PluginLocalization("zh-CN", listOf("zh-CN", "zh-CN-x-casual", "en", "ko", "ja"))
     private var strings = PluginStrings(emptyMap())
     private lateinit var environment: PluginEnvironment
